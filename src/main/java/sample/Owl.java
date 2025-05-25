@@ -1,261 +1,284 @@
 package sample;
 
-import javafx.application.Application;
-import javafx.event.EventHandler;
-import javafx.scene.Group;
-import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Label;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
-import javafx.stage.Stage;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+// Клас для елемента посилального типу (для глибинного копіювання)
+class WeaponInfo implements Cloneable {
+    private String weaponType;
+    private int sharpness;
 
-public class Main extends Application {
-    public static Stage primaryStage;
-    public static Scene scene;
-    public static Group group;
-    public static Random rnd = new Random();
-
-    public static List<Owl> owls = new ArrayList<>();
-    public static List<MacroObject> macroObjects = new ArrayList<>();
-
-    private Label statusLabel;
-    private Rectangle statusBackground;
+    public WeaponInfo(String weaponType, int sharpness) {
+        this.weaponType = weaponType;
+        this.sharpness = sharpness;
+    }
 
     @Override
-    public void start(Stage primaryStage) throws Exception {
-        Main.primaryStage = primaryStage;
-        primaryStage.setTitle("Sekiro: Світ Сов і Замків");
-
-        // Створюємо групу для всіх об'єктів
-        group = new Group();
-
-        // Фон
-        Rectangle background = new Rectangle(1000, 700, Color.DARKBLUE);
-        group.getChildren().add(background);
-
-        // Створюємо макрооб'єкти
-        createMacroObjects();
-
-        // Створюємо початкових сов
-        createInitialOwls();
-
-        // Створюємо рядок статуса
-        createStatusBar();
-
-        // Створюємо сцену
-        scene = new Scene(group, 1000, 700);
-        primaryStage.setScene(scene);
-
-        // Обробники подій
-        scene.setOnKeyPressed(new KeyPressedHandler());
-        scene.setOnMouseClicked(new MouseClickHandler());
-
-        updateStatusBar();
-        primaryStage.show();
+    protected Object clone() throws CloneNotSupportedException {
+        return new WeaponInfo(this.weaponType, this.sharpness);
     }
 
-    private void createMacroObjects() {
-        // Створюємо три макрооб'єкти
-        macroObjects.add(new AshigaCastle(50, 50));
-        macroObjects.add(new Hirudoen(300, 100));
-        macroObjects.add(new UpperTowerDojo(600, 30));
-    }
+    public String getWeaponType() { return weaponType; }
+    public void setWeaponType(String weaponType) { this.weaponType = weaponType; }
+    public int getSharpness() { return sharpness; }
+    public void setSharpness(int sharpness) { this.sharpness = sharpness; }
+}
 
-    private void createInitialOwls() {
-        // Створюємо початкових сов
-        owls.add(new Owl("Сова-Наставник", "Сова",
-                100, 250, 150, true,
-                new OwlWeapon("Катана", 9)));
+public class Owl implements Cloneable {
+    String name;
+    String type; // "Сова", "Великий Сова", "Нащадок Сови"
+    Canvas canvas;
+    boolean hasWeapon;
+    String weaponColor;
+    String owlColor;
+    Rectangle rectWeapon;
+    Rectangle rectActive;
+    boolean active;
+    MacroObject belongsToMacro; // Належність до макрооб'єкта
 
-        owls.add(new Owl("Великий Хозо", "Великий Сова",
-                300, 300, 200, false,
-                new OwlWeapon("Кинджал", 7)));
+    // Елемент посилального типу для демонстрації глибинного копіювання
+    WeaponInfo weaponInfo;
 
-        owls.add(new Owl("Молодий Учень", "Нащадок Сови",
-                500, 350, 25, true,
-                new OwlWeapon("Сюрікен", 5)));
-    }
+    public Owl(String name, String type, boolean hasWeapon, String weaponColor,
+               String owlColor, double x, double y) {
+        this.name = name;
+        this.type = type;
+        this.hasWeapon = hasWeapon;
+        this.weaponColor = weaponColor;
+        this.owlColor = owlColor;
+        this.belongsToMacro = null;
 
-    private void createStatusBar() {
-        statusBackground = new Rectangle(0, 670, 1000, 30);
-        statusBackground.setFill(Color.LIGHTGRAY);
-        group.getChildren().add(statusBackground);
-
-        statusLabel = new Label("Натисніть Insert для створення нової сови");
-        statusLabel.setLayoutX(10);
-        statusLabel.setLayoutY(675);
-        statusLabel.setFont(new Font("Arial", 12));
-        group.getChildren().add(statusLabel);
-    }
-
-    private void updateStatusBar() {
-        List<Owl> activeOwls = getActiveOwls();
-        if (activeOwls.isEmpty()) {
-            statusLabel.setText("Активних сов немає. Натисніть на сову для активації.");
-        } else if (activeOwls.size() == 1) {
-            Owl owl = activeOwls.get(0);
-            String macroInfo = owl.belongsToMacroObject() ?
-                    " | Належить до: " + owl.getMacroObject().getName() : " | Вільна";
-            statusLabel.setText("Активна: " + owl.toString() + macroInfo);
+        // Ініціалізуємо елемент посилального типу
+        if (hasWeapon) {
+            weaponInfo = new WeaponInfo("Katana", 85);
         } else {
-            statusLabel.setText("Активних сов: " + activeOwls.size() +
-                    " | Використовуйте стрілки для руху, Delete для видалення");
+            weaponInfo = new WeaponInfo("None", 0);
+        }
+
+        // Розмір canvas залежить від типу сови
+        int width = 180, height = 160;
+        if (type.equals("Великий Сова")) {
+            width = 220;
+            height = 200;
+        } else if (type.equals("Нащадок Сови")) {
+            width = 160;
+            height = 140;
+        }
+
+        canvas = new Canvas(width, height);
+        drawOwl(canvas, name, type, hasWeapon, owlColor, weaponColor);
+        Main.group.getChildren().add(canvas);
+
+        // Створюємо прямокутник для відображення зброї
+        if (hasWeapon) {
+            rectWeapon = new Rectangle(25, 15);
+            rectWeapon.setFill(Color.valueOf(weaponColor));
+            Main.group.getChildren().add(rectWeapon);
+        }
+
+        // Створюємо прямокутник для відображення активності
+        active = false;
+        rectActive = new Rectangle(width + 4, height + 4);
+        rectActive.setFill(Color.TRANSPARENT);
+        rectActive.setStrokeWidth(3);
+        rectActive.setStroke(Color.TRANSPARENT);
+        Main.group.getChildren().add(rectActive);
+
+        // Встановлюємо позицію
+        move(x - canvas.getLayoutX(), y - canvas.getLayoutY());
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        Owl cloned = new Owl(this.name + "_Copy", this.type, this.hasWeapon,
+                this.weaponColor, this.owlColor,
+                canvas.getLayoutX(), canvas.getLayoutY());
+
+        // Глибинне копіювання елемента посилального типу
+        cloned.weaponInfo = (WeaponInfo) this.weaponInfo.clone();
+        cloned.belongsToMacro = this.belongsToMacro;
+
+        return cloned;
+    }
+
+    public void removeFromScene() {
+        if (hasWeapon && rectWeapon != null) {
+            Main.group.getChildren().remove(rectWeapon);
+        }
+        Main.group.getChildren().remove(canvas);
+        Main.group.getChildren().remove(rectActive);
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
+        if (active) {
+            rectActive.setStroke(Color.YELLOW);
+        } else {
+            rectActive.setStroke(Color.TRANSPARENT);
         }
     }
 
-    public static void addNewOwl(String name, String type, int age,
-                                 boolean hasScroll, OwlWeapon weapon) {
-        double x = rnd.nextInt(800);
-        double y = rnd.nextInt(500) + 100;
-        owls.add(new Owl(name, type, x, y, age, hasScroll, weapon));
+    public void toggleActive() {
+        setActive(!active);
     }
 
-    private List<Owl> getActiveOwls() {
-        List<Owl> activeOwls = new ArrayList<>();
-        for (Owl owl : owls) {
-            if (owl.isActive()) {
-                activeOwls.add(owl);
+    public void move(double dx, double dy) {
+        if (hasWeapon && rectWeapon != null) {
+            rectWeapon.setX(rectWeapon.getX() + dx);
+            rectWeapon.setY(rectWeapon.getY() + dy);
+        }
+        canvas.setLayoutX(canvas.getLayoutX() + dx);
+        canvas.setLayoutY(canvas.getLayoutY() + dy);
+        rectActive.setX(rectActive.getX() + dx);
+        rectActive.setY(rectActive.getY() + dy);
+    }
+
+    public boolean contains(double x, double y) {
+        return x >= canvas.getLayoutX() && x <= canvas.getLayoutX() + canvas.getWidth() &&
+                y >= canvas.getLayoutY() && y <= canvas.getLayoutY() + canvas.getHeight();
+    }
+
+    public Canvas getCanvas() {
+        return canvas;
+    }
+
+    // Оновлення параметрів сови (для діалогу редагування)
+    public void updateOwl(String newName, String newType, boolean newHasWeapon,
+                          String newWeaponColor, String newOwlColor) {
+        this.name = newName;
+        this.type = newType;
+        this.hasWeapon = newHasWeapon;
+        this.weaponColor = newWeaponColor;
+        this.owlColor = newOwlColor;
+
+        // Оновлюємо weaponInfo
+        if (hasWeapon) {
+            weaponInfo.setWeaponType("Katana");
+            weaponInfo.setSharpness(85);
+        } else {
+            weaponInfo.setWeaponType("None");
+            weaponInfo.setSharpness(0);
+        }
+
+        // Перемальовуємо сову
+        drawOwl(canvas, name, type, hasWeapon, owlColor, weaponColor);
+
+        // Оновлюємо прямокутник зброї
+        if (hasWeapon) {
+            if (rectWeapon == null) {
+                rectWeapon = new Rectangle(25, 15);
+                Main.group.getChildren().add(rectWeapon);
+            }
+            rectWeapon.setFill(Color.valueOf(weaponColor));
+            rectWeapon.setX(canvas.getLayoutX() + canvas.getWidth() - 30);
+            rectWeapon.setY(canvas.getLayoutY() + 20);
+        } else {
+            if (rectWeapon != null) {
+                Main.group.getChildren().remove(rectWeapon);
+                rectWeapon = null;
             }
         }
-        return activeOwls;
     }
 
-    private void deactivateAllOwls() {
-        for (Owl owl : owls) {
-            owl.setActive(false);
+    public static void drawOwl(Canvas canvas, String name, String type, boolean hasWeapon,
+                               String owlColor, String weaponColor) {
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+
+        // Очищуємо canvas
+        gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+
+        double centerX = canvas.getWidth() / 2;
+        double centerY = canvas.getHeight() / 2;
+
+        // Розмір залежить від типу
+        double scale = 1.0;
+        if (type.equals("Великий Сова")) {
+            scale = 1.3;
+        } else if (type.equals("Нащадок Сови")) {
+            scale = 0.8;
         }
-        updateStatusBar();
+
+        // Малюємо тіло сови
+        gc.setFill(Color.valueOf(owlColor));
+        gc.fillOval(centerX - 30 * scale, centerY - 20 * scale, 60 * scale, 50 * scale);
+
+        // Малюємо голову
+        gc.fillOval(centerX - 25 * scale, centerY - 45 * scale, 50 * scale, 40 * scale);
+
+        // Малюємо очі
+        gc.setFill(Color.YELLOW);
+        gc.fillOval(centerX - 15 * scale, centerY - 35 * scale, 12 * scale, 12 * scale);
+        gc.fillOval(centerX + 3 * scale, centerY - 35 * scale, 12 * scale, 12 * scale);
+
+        // Зіниці
+        gc.setFill(Color.BLACK);
+        gc.fillOval(centerX - 12 * scale, centerY - 32 * scale, 6 * scale, 6 * scale);
+        gc.fillOval(centerX + 6 * scale, centerY - 32 * scale, 6 * scale, 6 * scale);
+
+        // Дзьоб
+        gc.setFill(Color.ORANGE);
+        double[] beakX = {centerX - 3 * scale, centerX + 3 * scale, centerX};
+        double[] beakY = {centerY - 25 * scale, centerY - 25 * scale, centerY - 15 * scale};
+        gc.fillPolygon(beakX, beakY, 3);
+
+        // Крила
+        gc.setFill(Color.valueOf(owlColor).darker());
+        gc.fillOval(centerX - 45 * scale, centerY - 10 * scale, 25 * scale, 35 * scale);
+        gc.fillOval(centerX + 20 * scale, centerY - 10 * scale, 25 * scale, 35 * scale);
+
+        // Лапи
+        gc.setFill(Color.ORANGE);
+        gc.fillRect(centerX - 10 * scale, centerY + 20 * scale, 8 * scale, 15 * scale);
+        gc.fillRect(centerX + 2 * scale, centerY + 20 * scale, 8 * scale, 15 * scale);
+
+        // Відображення стану weaponInfo (елемент посилального типу)
+        gc.setFill(Color.BLACK);
+        gc.setFont(new Font("Arial", 8));
+        gc.fillText("Weapon: " + (hasWeapon ? "Yes" : "No"), 5, canvas.getHeight() - 25);
+
+        // Відображення приналежності до макрооб'єкта
+        gc.setFill(Color.DARKBLUE);
+        gc.setFont(new Font("Arial", 8));
+        String macroText = "Macro: None";
+        // Це буде оновлено в Main після створення
+        gc.fillText(macroText, 5, canvas.getHeight() - 10);
+
+        // Малюємо зброю, якщо є
+        if (hasWeapon) {
+            gc.setFill(Color.valueOf(weaponColor));
+            gc.fillRect(centerX + 25 * scale, centerY - 20 * scale, 4 * scale, 25 * scale);
+            gc.fillRect(centerX + 20 * scale, centerY - 25 * scale, 14 * scale, 5 * scale);
+        }
+
+        // Назва сови
+        gc.setFill(Color.WHITE);
+        gc.setFont(new Font("Arial", 12));
+        gc.fillText(name, centerX - name.length() * 3, centerY + 50 * scale);
+
+        // Тип сови
+        gc.setFill(Color.LIGHTGRAY);
+        gc.setFont(new Font("Arial", 10));
+        gc.fillText(type, centerX - type.length() * 2.5, centerY + 65 * scale);
     }
 
-    private void deleteActiveOwls() {
-        List<Owl> toRemove = new ArrayList<>();
-        for (Owl owl : owls) {
-            if (owl.isActive()) {
-                owl.removeFromScene();
-                toRemove.add(owl);
-            }
-        }
-        owls.removeAll(toRemove);
-        updateStatusBar();
+    // Оновлення відображення приналежності до макрооб'єкта
+    public void updateMacroDisplay() {
+        GraphicsContext gc = canvas.getGraphicsContext2D();
+
+        // Очищуємо область з текстом про макрооб'єкт
+        gc.clearRect(0, canvas.getHeight() - 15, canvas.getWidth(), 15);
+
+        // Перемальовуємо текст
+        gc.setFill(Color.DARKBLUE);
+        gc.setFont(new Font("Arial", 8));
+        String macroText = belongsToMacro != null ? "Macro: " + belongsToMacro.name : "Macro: None";
+        gc.fillText(macroText, 5, canvas.getHeight() - 5);
     }
-
-    private void moveActiveOwls(double dx, double dy) {
-        boolean moved = false;
-        for (Owl owl : owls) {
-            if (owl.isActive()) {
-                owl.move(dx, dy);
-                moved = true;
-            }
-        }
-        if (moved) {
-            updateStatusBar();
-        }
-    }
-
-    private void copyActiveOwl() {
-        List<Owl> activeOwls = getActiveOwls();
-        if (activeOwls.size() == 1) {
-            Owl original = activeOwls.get(0);
-            Owl copy = original.clone();
-            copy.move(20, 20); // Зміщуємо копію
-            owls.add(copy);
-
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Копіювання");
-            alert.setHeaderText("Сову скопійовано!");
-            alert.setContentText("Створено копію: " + copy.getName());
-            alert.showAndWait();
-        } else if (activeOwls.size() > 1) {
-            Alert alert = new Alert(Alert.AlertType.WARNING);
-            alert.setTitle("Помилка копіювання");
-            alert.setHeaderText("Забагато активних сов!");
-            alert.setContentText("Для копіювання виберіть тільки одну сову.");
-            alert.showAndWait();
-        }
-    }
-
-    private void handleOwlToMacroObjectAssignment(Owl owl) {
-        if (macroObjects.isEmpty()) return;
-
-        // Простий алгоритм: знайти найближчий макрооб'єкт
-        MacroObject closest = null;
-        double minDistance = Double.MAX_VALUE;
-
-        for (MacroObject macro : macroObjects) {
-            double distance = Math.sqrt(Math.pow(owl.getX() - macro.getX(), 2) +
-                    Math.pow(owl.getY() - macro.getY(), 2));
-            if (distance < minDistance) {
-                minDistance = distance;
-                closest = macro;
-            }
-        }
-
-        if (closest != null) {
-            if (owl.belongsToMacroObject()) {
-                // Якщо сова вже належить комусь, видаляємо її
-                owl.getMacroObject().removeOwl(owl);
-            }
-            closest.addOwl(owl);
-
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Призначення сови");
-            alert.setHeaderText("Сову призначено!");
-            alert.setContentText(owl.getName() + " тепер належить до " + closest.getName());
-            alert.showAndWait();
-        }
-    }
-
-    private void removeOwlFromMacroObjects(Owl owl) {
-        if (owl.belongsToMacroObject()) {
-            MacroObject macro = owl.getMacroObject();
-            macro.removeOwl(owl);
-
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Звільнення сови");
-            alert.setHeaderText("Сову звільнено!");
-            alert.setContentText(owl.getName() + " більше не належить до " + macro.getName());
-            alert.showAndWait();
-        }
-    }
-
-    private class KeyPressedHandler implements EventHandler<KeyEvent> {
-        @Override
-        public void handle(KeyEvent event) {
-            double delta = event.isShiftDown() ? 20.0 : 5.0;
-
-            switch (event.getCode()) {
-                case INSERT:
-                    try {
-                        DialogNewOwl.display();
-                        updateStatusBar();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    break;
-
-                case DELETE:
-                    deleteActiveOwls();
-                    break;
-
-                case ESCAPE:
-                    deactivateAllOwls();
-                    break;
-
-                case C:
-                    if (event.isControlDown()) {
-                        copyActiveOwl();
-                    }
-                    break;
-
-                case UP:
+}
