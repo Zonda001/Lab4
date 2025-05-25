@@ -61,20 +61,21 @@ public class Controller implements Initializable {
         if (DialogEditOwl.currentOwl != null) {
             Owl owl = DialogEditOwl.currentOwl;
 
-            txtEditName.setText(owl.name);
+            txtEditName.setText(owl.getName());
 
             cmbEditColor.getItems().addAll("BROWN", "DARKBROWN", "LIGHTBROWN", "GRAY", "WHITE", "BLACK");
-            cmbEditColor.setValue(owl.color);
+            cmbEditColor.setValue(owl.getColor());
 
             cmbEditFeatherColor.getItems().addAll("GOLD", "SILVER", "RED", "BLUE", "GREEN", "PURPLE");
-            cmbEditFeatherColor.setValue(owl.featherColor);
+            cmbEditFeatherColor.setValue(owl.getFeatherColor());
 
-            chkEditHasFeather.setSelected(owl.hasFeather);
+            chkEditHasFeather.setSelected(owl.isHasFeather());
 
             // Встановлюємо розмір
-            if (owl.size <= 60) {
+            double size = owl.getSize();
+            if (size <= 60) {
                 rbEditSmall.setSelected(true);
-            } else if (owl.size <= 100) {
+            } else if (size <= 100) {
                 rbEditMedium.setSelected(true);
             } else {
                 rbEditLarge.setSelected(true);
@@ -120,16 +121,20 @@ public class Controller implements Initializable {
             size = 120;
         }
 
+        // Створюємо нову сову з випадковими координатами
+        double randomX = 100 + Main.rnd.nextDouble() * 600;
+        double randomY = 300 + Main.rnd.nextDouble() * 200;
+
         // Створюємо нову сову
         switch (type) {
             case "Сова":
-                Main.addNewOwl(name, color, hasFeather, featherColor, size);
+                Main.addNewOwl(name, type, hasFeather, featherColor, color, randomX, randomY);
                 break;
             case "Великий Сова":
-                Main.addNewBigOwl(name, color, hasFeather, featherColor, size);
+                Main.addNewOwl(name, type, hasFeather, featherColor, color, randomX, randomY);
                 break;
             case "Нащадок Сови":
-                Main.addNewOwlChild(name, color, hasFeather, featherColor, size);
+                Main.addNewOwl(name, type, hasFeather, featherColor, color, randomX, randomY);
                 break;
         }
 
@@ -172,11 +177,11 @@ public class Controller implements Initializable {
 
         // Оновлюємо параметри сови
         Owl owl = DialogEditOwl.currentOwl;
-        owl.name = name;
-        owl.color = color;
-        owl.hasFeather = hasFeather;
-        owl.featherColor = featherColor;
-        owl.size = size;
+        owl.setName(name);
+        owl.setColor(color);
+        owl.setHasFeather(hasFeather);
+        owl.setFeatherColor(featherColor);
+        owl.setSize(size);
 
         // Перемальовуємо сову з новими параметрами
         owl.redraw();

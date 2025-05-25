@@ -206,7 +206,7 @@ class UpperTowerDojo extends MacroObject {
         gc.fillRect(85, 120, 15, 15);
 
         // Двері
-        gc.setFill(Color.DARKBROWN);
+        gc.setFill(Color.web("#8B4513")); // SADDLEBROWN equivalent
         gc.fillRect(70, 140, 20, 20);
         gc.strokeRect(70, 140, 20, 20);
 

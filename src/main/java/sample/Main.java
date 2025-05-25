@@ -4,9 +4,6 @@ import javafx.application.Application;
 import javafx.event.EventHandler;
 import javafx.scene.Group;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
@@ -21,86 +18,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
-
-// Клас для макрооб'єктів
-class MacroObject {
-    String name;
-    Canvas canvas;
-    int owlCount;
-    Label countLabel;
-
-    public MacroObject(String name, double x, double y) {
-        this.name = name;
-        this.owlCount = 0;
-        canvas = new Canvas(200, 150);
-        drawMacroObject(canvas, name);
-        canvas.setLayoutX(x);
-        canvas.setLayoutY(y);
-
-        // Створюємо лейбл для відображення кількості сов
-        countLabel = new Label("Сови: " + owlCount);
-        countLabel.setFont(new Font("Arial", 14));
-        countLabel.setTextFill(Color.WHITE);
-        countLabel.setLayoutX(x + 10);
-        countLabel.setLayoutY(y + 120);
-
-        Main.group.getChildren().addAll(canvas, countLabel);
-    }
-
-    public void updateOwlCount() {
-        owlCount = 0;
-        for (Owl owl : Main.owls) {
-            if (owl.belongsToMacro == this) {
-                owlCount++;
-            }
-        }
-        countLabel.setText("Сови: " + owlCount);
-    }
-
-    public boolean contains(double x, double y) {
-        return x >= canvas.getLayoutX() && x <= canvas.getLayoutX() + canvas.getWidth() &&
-                y >= canvas.getLayoutY() && y <= canvas.getLayoutY() + canvas.getHeight();
-    }
-
-    private void drawMacroObject(Canvas canvas, String name) {
-        GraphicsContext gc = canvas.getGraphicsContext2D();
-
-        if (name.equals("Замок Асіна")) {
-            // Малюємо замок
-            gc.setFill(Color.DARKGRAY);
-            gc.fillRect(50, 80, 100, 60);
-            gc.setFill(Color.GRAY);
-            gc.fillRect(40, 60, 120, 20);
-            gc.setFill(Color.DARKRED);
-            gc.fillPolygon(new double[]{40, 80, 120, 160}, new double[]{60, 40, 40, 60}, 4);
-            gc.setFill(Color.WHITE);
-            gc.setFont(new Font("Arial", 12));
-            gc.fillText("Замок Асіна", 60, 100);
-        } else if (name.equals("Хіру-ден")) {
-            // Малюємо храм
-            gc.setFill(Color.BROWN);
-            gc.fillRect(30, 90, 140, 50);
-            gc.setFill(Color.DARKRED);
-            gc.fillPolygon(new double[]{20, 100, 180}, new double[]{90, 50, 90}, 3);
-            gc.setFill(Color.GOLD);
-            gc.fillOval(90, 70, 20, 20);
-            gc.setFill(Color.WHITE);
-            gc.setFont(new Font("Arial", 12));
-            gc.fillText("Хіру-ден", 75, 110);
-        } else if (name.equals("Верхній Баштовий Додзьо")) {
-            // Малюємо додзьо
-            gc.setFill(Color.DARKGREEN);
-            gc.fillRect(60, 70, 80, 70);
-            gc.setFill(Color.BLACK);
-            gc.fillRect(70, 60, 60, 10);
-            gc.setFill(Color.YELLOW);
-            gc.fillOval(85, 80, 30, 30);
-            gc.setFill(Color.WHITE);
-            gc.setFont(new Font("Arial", 10));
-            gc.fillText("Верхній Додзьо", 65, 120);
-        }
-    }
-}
 
 public class Main extends Application {
     public static Stage primaryStage;
@@ -119,7 +36,7 @@ public class Main extends Application {
 
     public static void updateMacroObjectCounts() {
         for (MacroObject macro : macroObjects) {
-            macro.updateOwlCount();
+            macro.updateDisplay();
         }
     }
 
@@ -133,7 +50,7 @@ public class Main extends Application {
                 if (activeNames.length() > 0) {
                     activeNames.append(", ");
                 }
-                activeNames.append(owl.name);
+                activeNames.append(owl.getName());
             }
         }
 
@@ -156,14 +73,14 @@ public class Main extends Application {
         group.getChildren().add(background);
 
         // Створюємо макрооб'єкти
-        macroObjects.add(new MacroObject("Замок Асіна", 50, 50));
-        macroObjects.add(new MacroObject("Хіру-ден", 350, 50));
-        macroObjects.add(new MacroObject("Верхній Баштовий Додзьо", 650, 50));
+        macroObjects.add(new AshigaCastle(50, 50));
+        macroObjects.add(new Hirudoen(350, 50));
+        macroObjects.add(new UpperTowerDojo(650, 50));
 
         // Створюємо початкових сов
-        addNewOwl("Сова-Розвідник", "Сова", true, "Silver", "Brown", 100, 300);
-        addNewOwl("Великий Страж", "Великий Сова", true, "Gold", "Black", 400, 300);
-        addNewOwl("Спадкоємець Тіні", "Нащадок Сови", false, "Red", "White", 700, 300);
+        addNewOwl("Сова-Розвідник", "Сова", true, "Silver", "BROWN", 100, 300);
+        addNewOwl("Великий Страж", "Великий Сова", true, "Gold", "BLACK", 400, 300);
+        addNewOwl("Спадкоємець Тіні", "Нащадок Сови", false, "Red", "WHITE", 700, 300);
 
         // Створюємо статус лейбл
         statusLabel = new Label("Активних сов: немає");
@@ -269,7 +186,12 @@ public class Main extends Application {
                         if (!macroObjects.isEmpty()) {
                             for (Owl owl : owls) {
                                 if (owl.isActive()) {
-                                    owl.belongsToMacro = macroObjects.get(0);
+                                    // Спочатку видаляємо з поточного макрооб'єкта
+                                    if (owl.getMacroObject() != null) {
+                                        owl.getMacroObject().removeOwl(owl);
+                                    }
+                                    // Додаємо до нового макрооб'єкта
+                                    macroObjects.get(0).addOwl(owl);
                                 }
                             }
                             updateMacroObjectCounts();
@@ -281,7 +203,12 @@ public class Main extends Application {
                         if (macroObjects.size() > 1) {
                             for (Owl owl : owls) {
                                 if (owl.isActive()) {
-                                    owl.belongsToMacro = macroObjects.get(1);
+                                    // Спочатку видаляємо з поточного макрооб'єкта
+                                    if (owl.getMacroObject() != null) {
+                                        owl.getMacroObject().removeOwl(owl);
+                                    }
+                                    // Додаємо до нового макрооб'єкта
+                                    macroObjects.get(1).addOwl(owl);
                                 }
                             }
                             updateMacroObjectCounts();
@@ -293,7 +220,12 @@ public class Main extends Application {
                         if (macroObjects.size() > 2) {
                             for (Owl owl : owls) {
                                 if (owl.isActive()) {
-                                    owl.belongsToMacro = macroObjects.get(2);
+                                    // Спочатку видаляємо з поточного макрооб'єкта
+                                    if (owl.getMacroObject() != null) {
+                                        owl.getMacroObject().removeOwl(owl);
+                                    }
+                                    // Додаємо до нового макрооб'єкта
+                                    macroObjects.get(2).addOwl(owl);
                                 }
                             }
                             updateMacroObjectCounts();
@@ -304,7 +236,9 @@ public class Main extends Application {
                         // Відʼєднати активних сов від усіх макрооб'єктів
                         for (Owl owl : owls) {
                             if (owl.isActive()) {
-                                owl.belongsToMacro = null;
+                                if (owl.getMacroObject() != null) {
+                                    owl.getMacroObject().removeOwl(owl);
+                                }
                             }
                         }
                         updateMacroObjectCounts();
