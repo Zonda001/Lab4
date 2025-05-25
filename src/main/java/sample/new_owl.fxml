@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<Pane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity"
+      prefHeight="500.0" prefWidth="450.0" xmlns="http://javafx.com/javafx/11.0.1"
+      xmlns:fx="http://javafx.com/fxml/1" fx:controller="sample.Controller">
+    <children>
+        <Label layoutX="30.0" layoutY="30.0" text="Назва:" />
+        <TextField fx:id="txtName" layoutX="150.0" layoutY="26.0" prefWidth="200.0" />
+
+        <Label layoutX="30.0" layoutY="70.0" text="Тип сови:" />
+        <ComboBox fx:id="cmbType" layoutX="150.0" layoutY="66.0" prefWidth="200.0" />
+
+        <Label layoutX="30.0" layoutY="110.0" text="Колір тіла:" />
+        <ComboBox fx:id="cmbColor" layoutX="150.0" layoutY="106.0" prefWidth="200.0" />
+
+        <CheckBox fx:id="chkHasFeather" layoutX="150.0" layoutY="146.0" mnemonicParsing="false" />
+        <Label layoutX="30.0" layoutY="150.0" text="Є перо?" />
+
+        <Label layoutX="30.0" layoutY="190.0" text="Колір пера:" />
+        <ComboBox fx:id="cmbFeatherColor" layoutX="150.0" layoutY="186.0" prefWidth="200.0" />
+
+        <Label layoutX="30.0" layoutY="230.0" text="Розмір:" />
+
+        <RadioButton fx:id="rbSmall" layoutX="150.0" layoutY="230.0" mnemonicParsing="false" text="Малий">
+            <toggleGroup>
+                <ToggleGroup fx:id="tgSize" />
+            </toggleGroup>
+        </RadioButton>
+
+        <RadioButton fx:id="rbMedium" layoutX="220.0" layoutY="230.0" mnemonicParsing="false"
+                     text="Середній" toggleGroup="$tgSize" />
+
+        <RadioButton fx:id="rbLarge" layoutX="300.0" layoutY="230.0" mnemonicParsing="false"
+                     text="Великий" toggleGroup="$tgSize" />
+
+        <Button layoutX="150.0" layoutY="420.0" mnemonicParsing="false" onAction="#pressOK"
+                prefWidth="80.0" text="OK" />
+
+        <Button layoutX="250.0" layoutY="420.0" mnemonicParsing="false" onAction="#pressCancel"
+                prefWidth="80.0" text="Скасувати" />
+    </children>
+</Pane>

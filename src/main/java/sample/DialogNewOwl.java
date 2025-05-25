@@ -1,4 +1,3 @@
-
 package sample;
 
 import javafx.fxml.FXMLLoader;
@@ -13,11 +12,11 @@ public class DialogNewOwl {
     public static Scene scene;
 
     public static void display() throws IOException {
-        Parent root = FXMLLoader.load(Main.class.getResource("newowl.fxml"));
+        Parent root = FXMLLoader.load(DialogNewOwl.class.getResource("new_owl.fxml"));
         window = new Stage();
         window.initModality(Modality.APPLICATION_MODAL);
         window.setTitle("Створити нову сову");
-        scene = new Scene(root, 500, 450);
+        scene = new Scene(root, 450, 500);
         window.setScene(scene);
         window.showAndWait();
     }
