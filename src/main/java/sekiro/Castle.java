@@ -132,6 +132,21 @@ public class Castle {
         drawCastle();
     }
 
+    // Метод для оновлення відображення (синонім для redraw)
+    public void updateDisplay() {
+        drawCastle();
+    }
+
+    // Метод для отримання кількості сов
+    public int getOwlCount() {
+        return owls.size();
+    }
+
+    // Метод для отримання списку сов
+    public ArrayList<Owl> getOwlsList() {
+        return new ArrayList<>(owls);
+    }
+
     public boolean containsPoint(double x, double y) {
         return canvas.getBoundsInParent().contains(x, y);
     }

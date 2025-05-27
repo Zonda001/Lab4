@@ -181,6 +181,17 @@ public class Owl implements Cloneable {
         return canvas.getBoundsInParent().contains(x, y);
     }
 
+    // Метод для оновлення позиції елементів (для клонованих об'єктів)
+    public void updatePosition() {
+        double x = canvas.getLayoutX();
+        double y = canvas.getLayoutY();
+
+        rectActive.setX(x - 2);
+        rectActive.setY(y - 2);
+        shinobiRect.setX(x + 170);
+        shinobiRect.setY(y + 10);
+    }
+
     // Глибинне копіювання
     @Override
     public Owl clone() {

@@ -208,6 +208,7 @@ public class Main extends Application {
         for (Owl owl : owls) {
             if (owl.isActive()) {
                 try {
+                    @SuppressWarnings("CloneDoesntDeclareCloneNotSupportedException")
                     Owl clonedOwl = owl.clone();
                     clonedOwl.name = owl.name + " (копія)";
                     clonedOwl.canvas.setLayoutX(owl.canvas.getLayoutX() + 50);
@@ -223,12 +224,9 @@ public class Main extends Application {
                     clonedOwl.updatePosition();
                     owls.add(clonedOwl);
                     break;
-                } catch (CloneNotSupportedException e) {
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setTitle("Помилка");
-                    alert.setHeaderText("Не вдалося скопіювати сову");
-                    alert.setContentText(e.getMessage());
-                    alert.showAndWait();
+
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
             }
         }
