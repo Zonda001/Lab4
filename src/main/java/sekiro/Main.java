@@ -93,7 +93,7 @@ public class Main extends Application {
         if (event.isShiftDown()) delta *= 3.0;
 
         switch (event.getCode()) {
-            case INSERT:
+            case TAB:
                 try {
                     OwlCreationDialog.display();
                     updateStatus();
