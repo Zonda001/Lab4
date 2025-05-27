@@ -12,141 +12,142 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 public class OwlCreationDialog {
+    private static boolean result = false;
+    private static String owlName;
+    private static String owlType;
+    private static boolean hasShinobiTechniques;
+    private static String skillLevel;
+    private static double positionX;
+    private static double positionY;
 
     public static void display() throws IOException {
         Stage window = new Stage();
         window.initModality(Modality.APPLICATION_MODAL);
         window.setTitle("Створення нової сови");
+        window.setMinWidth(400);
+        window.setMinHeight(350);
 
         GridPane grid = new GridPane();
-        grid.setAlignment(Pos.CENTER);
-        grid.setHgap(10);
+        grid.setPadding(new Insets(20, 20, 20, 20));
         grid.setVgap(10);
-        grid.setPadding(new Insets(25, 25, 25, 25));
+        grid.setHgap(10);
 
-        // Поля вводу
+        // Поле для імені
         Label nameLabel = new Label("Ім'я сови:");
         TextField nameField = new TextField();
+        nameField.setPromptText("Введіть ім'я сови");
         nameField.setText("Нова Сова");
 
+        // Поле для типу
         Label typeLabel = new Label("Тип сови:");
-        ComboBox<String> typeCombo = new ComboBox<>();
-        typeCombo.getItems().addAll("Сова", "Великий Сова", "Нащадок Сови");
-        typeCombo.setValue("Сова");
+        ComboBox<String> typeComboBox = new ComboBox<>();
+        typeComboBox.getItems().addAll(
+                "Великий Сова",
+                "Сова",
+                "Нащадок Сови",
+                "Демон Сова",
+                "Ворон-ніндзя"
+        );
+        typeComboBox.setValue("Сова");
 
-        Label positionLabel = new Label("Позиція:");
-        TextField xField = new TextField();
-        xField.setText("200");
-        xField.setPromptText("X координата");
+        // Чекбокс для технік шінобі
+        CheckBox shinobiCheckBox = new CheckBox("Володіє техніками шінобі");
+        shinobiCheckBox.setSelected(false);
 
-        TextField yField = new TextField();
-        yField.setText("300");
-        yField.setPromptText("Y координата");
+        // Поле для рівня майстерності
+        Label skillLabel = new Label("Рівень майстерності:");
+        ComboBox<String> skillComboBox = new ComboBox<>();
+        skillComboBox.getItems().addAll(
+                "Новачок",
+                "Учень",
+                "Адепт",
+                "Експерт",
+                "Майстер",
+                "Легенда"
+        );
+        skillComboBox.setValue("Новачок");
 
-        CheckBox featureCheck = new CheckBox("Має особливу властивість");
-        featureCheck.setSelected(true);
+        // Поля для позиції
+        Label posXLabel = new Label("Позиція X:");
+        TextField posXField = new TextField();
+        posXField.setText(String.valueOf(Main.rnd.nextInt(1000) + 100));
 
-        Label featureLabel = new Label("Опис властивості:");
-        TextField featureField = new TextField();
-        featureField.setText("Особлива здібність");
-
-        // Радіокнопки для вибору замку
-        Label castleLabel = new Label("Призначити до замку:");
-        ToggleGroup castleGroup = new ToggleGroup();
-
-        RadioButton noCastleRadio = new RadioButton("Без замку");
-        noCastleRadio.setToggleGroup(castleGroup);
-        noCastleRadio.setSelected(true);
-
-        RadioButton asinaRadio = new RadioButton("Замок Асіна");
-        asinaRadio.setToggleGroup(castleGroup);
-
-        RadioButton hiruRadio = new RadioButton("Хіру-ден");
-        hiruRadio.setToggleGroup(castleGroup);
-
-        RadioButton towerRadio = new RadioButton("Верхній Баштовий Додзьо");
-        towerRadio.setToggleGroup(castleGroup);
+        Label posYLabel = new Label("Позиція Y:");
+        TextField posYField = new TextField();
+        posYField.setText(String.valueOf(Main.rnd.nextInt(600) + 100));
 
         // Кнопки
-        Button okButton = new Button("Створити");
-        Button cancelButton = new Button("Скасувати");
-
-        // Обробники подій
-        featureCheck.setOnAction(e -> featureField.setDisable(!featureCheck.isSelected()));
-
-        okButton.setOnAction(e -> {
+        Button createButton = new Button("Створити");
+        createButton.setOnAction(e -> {
             try {
-                String name = nameField.getText().trim();
-                if (name.isEmpty()) {
-                    showAlert("Помилка", "Введіть ім'я сови!");
+                owlName = nameField.getText().trim();
+                owlType = typeComboBox.getValue();
+                hasShinobiTechniques = shinobiCheckBox.isSelected();
+                skillLevel = skillComboBox.getValue();
+                positionX = Double.parseDouble(posXField.getText());
+                positionY = Double.parseDouble(posYField.getText());
+
+                if (owlName.isEmpty()) {
+                    showAlert("Помилка", "Ім'я сови не може бути порожнім!");
                     return;
                 }
 
-                String type = typeCombo.getValue();
-                double x = Double.parseDouble(xField.getText());
-                double y = Double.parseDouble(yField.getText());
-                boolean hasFeature = featureCheck.isSelected();
-                String featureDesc = hasFeature ? featureField.getText() : "";
-
-                // Створюємо сову
-                Owl newOwl = new Owl(name, type, x, y, hasFeature, featureDesc);
-                Main.owls.add(newOwl);
-
-                // Призначаємо до замку, якщо вибрано
-                RadioButton selected = (RadioButton) castleGroup.getSelectedToggle();
-                if (selected != noCastleRadio) {
-                    Castle selectedCastle = null;
-                    String castleName = selected.getText();
-
-                    for (Castle castle : Main.castles) {
-                        if (castle.getName().equals(castleName)) {
-                            selectedCastle = castle;
-                            break;
-                        }
-                    }
-
-                    if (selectedCastle != null) {
-                        newOwl.setBelongsToCastle(selectedCastle);
-                    }
+                if (positionX < 0 || positionX > 1150 || positionY < 0 || positionY > 750) {
+                    showAlert("Помилка", "Позиція повинна бути в межах сцени (0-1150, 0-750)!");
+                    return;
                 }
 
+                // Створюємо нову сову
+                Main.addNewOwl(owlName, owlType, hasShinobiTechniques, skillLevel, positionX, positionY);
+                result = true;
                 window.close();
 
             } catch (NumberFormatException ex) {
-                showAlert("Помилка", "Некоректні координати!");
+                showAlert("Помилка", "Неправильний формат числа для позиції!");
             }
         });
 
-        cancelButton.setOnAction(e -> window.close());
+        Button cancelButton = new Button("Скасувати");
+        cancelButton.setOnAction(e -> {
+            result = false;
+            window.close();
+        });
+
+        // Випадкова позиція
+        Button randomPosButton = new Button("Випадкова позиція");
+        randomPosButton.setOnAction(e -> {
+            posXField.setText(String.valueOf(Main.rnd.nextInt(1000) + 100));
+            posYField.setText(String.valueOf(Main.rnd.nextInt(600) + 100));
+        });
 
         // Розміщення елементів
         grid.add(nameLabel, 0, 0);
-        grid.add(nameField, 1, 0, 2, 1);
+        grid.add(nameField, 1, 0);
 
         grid.add(typeLabel, 0, 1);
-        grid.add(typeCombo, 1, 1, 2, 1);
+        grid.add(typeComboBox, 1, 1);
 
-        grid.add(positionLabel, 0, 2);
-        HBox posBox = new HBox(5);
-        posBox.getChildren().addAll(xField, yField);
-        grid.add(posBox, 1, 2, 2, 1);
+        grid.add(shinobiCheckBox, 0, 2, 2, 1);
 
-        grid.add(featureCheck, 0, 3, 3, 1);
-        grid.add(featureLabel, 0, 4);
-        grid.add(featureField, 1, 4, 2, 1);
+        grid.add(skillLabel, 0, 3);
+        grid.add(skillComboBox, 1, 3);
 
-        grid.add(castleLabel, 0, 5);
-        grid.add(noCastleRadio, 1, 5);
-        grid.add(asinaRadio, 1, 6);
-        grid.add(hiruRadio, 1, 7);
-        grid.add(towerRadio, 1, 8);
+        grid.add(posXLabel, 0, 4);
+        grid.add(posXField, 1, 4);
+
+        grid.add(posYLabel, 0, 5);
+        grid.add(posYField, 1, 5);
+
+        HBox posButtonBox = new HBox(10);
+        posButtonBox.getChildren().add(randomPosButton);
+        grid.add(posButtonBox, 1, 6);
 
         HBox buttonBox = new HBox(10);
         buttonBox.setAlignment(Pos.CENTER);
-        buttonBox.getChildren().addAll(okButton, cancelButton);
-        grid.add(buttonBox, 0, 9, 3, 1);
+        buttonBox.getChildren().addAll(createButton, cancelButton);
+        grid.add(buttonBox, 0, 7, 2, 1);
 
-        Scene scene = new Scene(grid, 450, 400);
+        Scene scene = new Scene(grid);
         window.setScene(scene);
         window.showAndWait();
     }
@@ -157,5 +158,9 @@ public class OwlCreationDialog {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    public static boolean getResult() {
+        return result;
     }
 }

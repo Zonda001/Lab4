@@ -28,6 +28,12 @@ public class Main extends Application {
     public static ArrayList<Castle> castles = new ArrayList<>();
     public static Label statusLabel;
 
+    public static void addNewOwl(String name, String type, boolean hasShinobiTechniques,
+                                 String skillLevel, double x, double y) {
+        Owl newOwl = new Owl(name, type, hasShinobiTechniques, skillLevel, x, y);
+        owls.add(newOwl);
+    }
+
     @Override
     public void start(Stage primaryStage) throws Exception {
         Main.primaryStage = primaryStage;
@@ -213,3 +219,105 @@ public class Main extends Application {
                     if (clonedOwl.hasShinobiTechniques) {
                         Main.group.getChildren().add(clonedOwl.shinobiRect);
                     }
+
+                    clonedOwl.updatePosition();
+                    owls.add(clonedOwl);
+                    break;
+                } catch (CloneNotSupportedException e) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Помилка");
+                    alert.setHeaderText("Не вдалося скопіювати сову");
+                    alert.setContentText(e.getMessage());
+                    alert.showAndWait();
+                }
+            }
+        }
+    }
+
+    private void moveActiveOwls(double dx, double dy) {
+        for (Owl owl : owls) {
+            if (owl.isActive()) {
+                owl.move(dx, dy);
+            }
+        }
+    }
+
+    private void assignOwlToCastle(KeyCode keyCode) {
+        int castleIndex = -1;
+        switch (keyCode) {
+            case DIGIT1: castleIndex = 0; break;
+            case DIGIT2: castleIndex = 1; break;
+            case DIGIT3: castleIndex = 2; break;
+        }
+
+        if (castleIndex >= 0 && castleIndex < castles.size()) {
+            Castle castle = castles.get(castleIndex);
+            for (Owl owl : owls) {
+                if (owl.isActive()) {
+                    // Спочатку видаляємо з інших замків
+                    for (Castle c : castles) {
+                        c.removeOwl(owl);
+                    }
+                    // Потім додаємо до обраного замку
+                    castle.addOwl(owl);
+                }
+            }
+        }
+    }
+
+    private void removeOwlFromAllCastles() {
+        for (Owl owl : owls) {
+            if (owl.isActive()) {
+                for (Castle castle : castles) {
+                    castle.removeOwl(owl);
+                }
+            }
+        }
+    }
+
+    private void showCastleInfo(Castle castle) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Інформація про замок");
+        alert.setHeaderText(castle.name);
+        alert.setContentText("Кількість сов: " + castle.getOwlCount() +
+                "\nСписок сов: " + castle.getOwlsList());
+        alert.showAndWait();
+    }
+
+    public static void updateStatus() {
+        int activeCount = 0;
+        StringBuilder activeOwls = new StringBuilder();
+
+        for (Owl owl : owls) {
+            if (owl.isActive()) {
+                activeCount++;
+                if (activeOwls.length() > 0) {
+                    activeOwls.append(", ");
+                }
+                activeOwls.append(owl.name);
+            }
+        }
+
+        String statusText;
+        if (activeCount == 0) {
+            statusText = "Немає активних сов. Insert - створити, клік - активувати";
+        } else if (activeCount == 1) {
+            statusText = "Активна сова: " + activeOwls.toString() +
+                    " | Стрілки - рух, Delete - видалити, Ctrl+C - копіювати, 1/2/3 - до замку, R - з замку";
+        } else {
+            statusText = "Активних сов: " + activeCount + " (" + activeOwls.toString() +
+                    ") | Стрілки - рух, Delete - видалити, ESC - деактивувати";
+        }
+
+        statusLabel.setText(statusText);
+
+        // Оновлюємо відображення замків
+        for (Castle castle : castles) {
+            castle.updateDisplay();
+        }
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+}
