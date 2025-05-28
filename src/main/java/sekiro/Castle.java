@@ -142,9 +142,50 @@ public class Castle {
         return owls.size();
     }
 
-    // Метод для отримання списку сов
-    public ArrayList<Owl> getOwlsList() {
-        return new ArrayList<>(owls);
+    // Виправлений метод для отримання списку назв сов
+    public String getOwlsList() {
+        if (owls.isEmpty()) {
+            return "Немає сов";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < owls.size(); i++) {
+            Owl owl = owls.get(i);
+            sb.append(owl.name);
+            if (owl.hasShinobiTechniques) {
+                sb.append(" (Shinobi)");
+            }
+            sb.append(" [").append(owl.skillLevel).append("]");
+
+            if (i < owls.size() - 1) {
+                sb.append("\n");
+            }
+        }
+        return sb.toString();
+    }
+
+    // Метод для отримання детальної інформації про сов
+    public String getDetailedOwlsList() {
+        if (owls.isEmpty()) {
+            return "У цьому замку немає сов";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Список сов у замку ").append(name).append(":\n\n");
+
+        for (int i = 0; i < owls.size(); i++) {
+            Owl owl = owls.get(i);
+            sb.append((i + 1)).append(". ").append(owl.name);
+            sb.append("\n   Тип: ").append(owl.owlType);
+            sb.append("\n   Рівень: ").append(owl.skillLevel);
+            sb.append("\n   Техніки Shinobi: ").append(owl.hasShinobiTechniques ? "Так" : "Ні");
+
+            if (i < owls.size() - 1) {
+                sb.append("\n\n");
+            }
+        }
+
+        return sb.toString();
     }
 
     public boolean containsPoint(double x, double y) {
@@ -157,5 +198,34 @@ public class Castle {
 
     public String getInfo() {
         return name + " (" + castleType + ") - Сов: " + owls.size();
+    }
+
+    // Метод для видалення сови за індексом (для меню)
+    public boolean removeOwlByIndex(int index) {
+        if (index >= 0 && index < owls.size()) {
+            Owl owl = owls.get(index);
+            removeOwl(owl);
+            return true;
+        }
+        return false;
+    }
+
+    // Метод для отримання сови за індексом
+    public Owl getOwlByIndex(int index) {
+        if (index >= 0 && index < owls.size()) {
+            return owls.get(index);
+        }
+        return null;
+    }
+
+    // Метод для отримання списку назв сов для вибору в діалозі
+    public String[] getOwlNamesArray() {
+        String[] names = new String[owls.size()];
+        for (int i = 0; i < owls.size(); i++) {
+            Owl owl = owls.get(i);
+            names[i] = (i + 1) + ". " + owl.name + " [" + owl.skillLevel + "]" +
+                    (owl.hasShinobiTechniques ? " (Shinobi)" : "");
+        }
+        return names;
     }
 }
