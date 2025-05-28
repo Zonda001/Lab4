@@ -21,8 +21,8 @@ import java.util.Random;
 
 public class Main extends Application {
     // Адаптивні розміри для ноутбуків
-    public static final int WINDOW_WIDTH = 1200;  // Зменшено з 1200
-    public static final int WINDOW_HEIGHT = 600;  // Зменшено з 800
+    public static final int WINDOW_WIDTH = 1024;  // Зменшено з 1200
+    public static final int WINDOW_HEIGHT = 768;  // Зменшено з 800
 
     public static Stage primaryStage;
     public static Scene scene;
@@ -180,15 +180,10 @@ public class Main extends Application {
                 }
             }
         } else if (event.getButton() == MouseButton.SECONDARY) {
-            // Правий клік - редагування сови
+            // Правий клік - меню з опціями (редагування сови або перегляд технік)
             for (Owl owl : owls) {
                 if (owl.contains(event.getX(), event.getY())) {
-                    try {
-                        OwlEditDialog.display(owl);
-                        updateStatus();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    showOwlContextMenu(owl, event.getX(), event.getY());
                     break;
                 }
             }
@@ -223,7 +218,7 @@ public class Main extends Application {
                     // Створюємо копію сови
                     Owl clonedOwl = new Owl(
                             owl.name + " (копія)",
-                            owl.owlType,
+                            owl.type,
                             owl.hasShinobiTechniques,
                             owl.skillLevel,
                             owl.canvas.getLayoutX() + 50,

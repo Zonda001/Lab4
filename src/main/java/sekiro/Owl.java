@@ -5,218 +5,262 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.layout.Pane;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 
 public class Owl implements Cloneable {
     String name;
-    String owlType;
+    String type;
     boolean hasShinobiTechniques;
     String skillLevel;
     Canvas canvas;
-    boolean active;
     Rectangle rectActive;
-    Rectangle shinobiRect; // Елемент посилального типу для демонстрації глибинного копіювання
-    ImageView owlImage;
-    ArrayList<String> techniques; // Елемент посилального типу
+    Rectangle shinobiRect;
+    boolean active = false;
+    Castle belongsToCastle;
+    ArrayList<Technique> techniques; // Список технік сови
 
-    // Посилання на макрооб'єкт
-    Castle belongsToCastle = null;
-
-    public Owl(String name, String owlType, boolean hasShinobiTechniques,
-               String skillLevel, double x, double y) {
+    public Owl(String name, String type, boolean hasShinobiTechniques, String skillLevel, double x, double y) {
         this.name = name;
-        this.owlType = owlType;
+        this.type = type;
         this.hasShinobiTechniques = hasShinobiTechniques;
         this.skillLevel = skillLevel;
-        this.techniques = new ArrayList<>();
 
-        // Додаємо деякі техніки в залежності від типу
-        if (hasShinobiTechniques) {
-            techniques.add("Невидимість");
-            techniques.add("Швидкий удар");
-            if (owlType.equals("Великий Сова")) {
-                techniques.add("Вогняна атака");
-            }
-        }
+        // Генеруємо випадкові техніки для сови
+        this.techniques = Technique.generateRandomTechniques(hasShinobiTechniques, skillLevel, Main.rnd);
 
-        canvas = new Canvas(200, 180);
+        canvas = new Canvas(80, 80);
         drawOwl();
 
-        // Додаємо канвас до головної групи
+        // Створюємо прямокутник для активності
+        rectActive = new Rectangle(80, 80);
+        rectActive.setFill(Color.TRANSPARENT);
+        rectActive.setStroke(Color.RED);
+        rectActive.setStrokeWidth(3);
+        rectActive.setVisible(false);
+
+        // Створюємо індикатор shinobi технік
+        if (hasShinobiTechniques) {
+            shinobiRect = new Rectangle(10, 10);
+            shinobiRect.setFill(Color.PURPLE);
+            shinobiRect.setStroke(Color.MAGENTA);
+            shinobiRect.setStrokeWidth(1);
+        }
+
+        // Додаємо до сцени
         Main.group.getChildren().add(canvas);
+        Main.group.getChildren().add(rectActive);
+        if (hasShinobiTechniques) {
+            Main.group.getChildren().add(shinobiRect);
+        }
+
+        // Встановлюємо позицію
         canvas.setLayoutX(x);
         canvas.setLayoutY(y);
-
-        // Створюємо прямокутник для показу синобі технік
-        shinobiRect = new Rectangle(30, 15);
-        if (hasShinobiTechniques) {
-            shinobiRect.setFill(Color.GOLD);
-            Main.group.getChildren().add(shinobiRect);
-        } else {
-            shinobiRect.setFill(Color.GRAY);
-        }
-        shinobiRect.setX(x + 170);
-        shinobiRect.setY(y + 10);
-
-        active = false;
-        rectActive = new Rectangle(204, 184);
-        rectActive.setFill(Color.TRANSPARENT);
-        rectActive.setStrokeWidth(3);
-        rectActive.setStroke(Color.BLACK);
-        Main.group.getChildren().add(rectActive);
-        rectActive.setX(x - 2);
-        rectActive.setY(y - 2);
+        updatePosition();
     }
 
     private void drawOwl() {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 
-        // Визначаємо колір в залежності від типу сови
-        Color owlColor = Color.BROWN;
-        double size = 1.0;
+        // Визначаємо колір в залежності від типу та рівня
+        Color bodyColor = Color.BROWN;
+        Color eyeColor = Color.YELLOW;
 
-        switch (owlType) {
+        switch (type) {
             case "Великий Сова":
-                owlColor = Color.DARKRED;
-                size = 1.2;
+                bodyColor = Color.DARKBLUE;
+                eyeColor = Color.ORANGE;
                 break;
             case "Нащадок Сови":
-                owlColor = Color.PURPLE;
-                size = 0.8;
+                bodyColor = Color.LIGHTCYAN;
+                eyeColor = Color.LIGHTYELLOW;
+                break;
+            case "Сова":
+                bodyColor = Color.BROWN;
+                eyeColor = Color.YELLOW;
                 break;
         }
 
-        // Малюємо тіло сови (еліпс)
-        gc.setFill(owlColor);
-        gc.fillOval(50 * size, 60 * size, 100 * size, 80 * size);
+        // Колір залежно від рівня майстерності
+        switch (skillLevel) {
+            case "Майстер":
+                bodyColor = bodyColor.deriveColor(0, 1.2, 0.8, 1.0); // Темніше
+                break;
+            case "Експерт":
+                bodyColor = bodyColor.deriveColor(0, 1.1, 0.9, 1.0);
+                break;
+        }
 
-        // Малюємо голову
-        gc.fillOval(70 * size, 20 * size, 60 * size, 60 * size);
+        // Тіло сови
+        gc.setFill(bodyColor);
+        gc.fillOval(20, 30, 40, 35);
 
-        // Малюємо очі
-        gc.setFill(Color.YELLOW);
-        gc.fillOval(80 * size, 35 * size, 15 * size, 15 * size);
-        gc.fillOval(105 * size, 35 * size, 15 * size, 15 * size);
+        // Голова
+        gc.fillOval(25, 15, 30, 30);
+
+        // Очі
+        gc.setFill(eyeColor);
+        gc.fillOval(30, 22, 8, 8);
+        gc.fillOval(42, 22, 8, 8);
 
         // Зіниці
         gc.setFill(Color.BLACK);
-        gc.fillOval(85 * size, 40 * size, 5 * size, 5 * size);
-        gc.fillOval(110 * size, 40 * size, 5 * size, 5 * size);
+        gc.fillOval(32, 24, 4, 4);
+        gc.fillOval(44, 24, 4, 4);
 
         // Дзьоб
-        gc.fillOval(95 * size, 50 * size, 10 * size, 8 * size);
+        gc.setFill(Color.ORANGE);
+        double[] xPoints = {38, 42, 40};
+        double[] yPoints = {32, 32, 38};
+        gc.fillPolygon(xPoints, yPoints, 3);
 
         // Крила
-        gc.setFill(owlColor.darker());
-        gc.fillOval(30 * size, 70 * size, 40 * size, 60 * size);
-        gc.fillOval(130 * size, 70 * size, 40 * size, 60 * size);
+        gc.setFill(bodyColor.darker());
+        gc.fillOval(10, 35, 20, 25);
+        gc.fillOval(50, 35, 20, 25);
 
         // Лапи
         gc.setFill(Color.ORANGE);
-        gc.fillRect(80 * size, 130 * size, 8 * size, 20 * size);
-        gc.fillRect(112 * size, 130 * size, 8 * size, 20 * size);
+        gc.fillRect(28, 60, 4, 15);
+        gc.fillRect(48, 60, 4, 15);
 
-        // Текст з ім'ям
+        // Кігті
+        gc.setStroke(Color.BLACK);
+        gc.setLineWidth(2);
+        gc.strokeLine(26, 75, 24, 78);
+        gc.strokeLine(30, 75, 28, 78);
+        gc.strokeLine(32, 75, 34, 78);
+        gc.strokeLine(46, 75, 44, 78);
+        gc.strokeLine(50, 75, 48, 78);
+        gc.strokeLine(52, 75, 54, 78);
+
+        // Індикатор кількості технік
         gc.setFill(Color.WHITE);
-        gc.setFont(new Font("Arial", 14));
-        gc.fillText(name, 10, 165);
+        gc.setFont(new Font("Arial", 10));
+        gc.fillText("T:" + techniques.size(), 5, 12);
 
-        // Показуємо рівень майстерності
-        gc.setFill(Color.LIGHTBLUE);
-        gc.fillText(skillLevel, 120, 165);
+        // Показуємо найпотужнішу техніку
+        if (!techniques.isEmpty()) {
+            Technique strongest = getStrongestTechnique();
+            gc.setFill(getElementColor(strongest.element));
+            gc.fillOval(65, 5, 12, 12);
+            gc.setFill(Color.WHITE);
+            gc.setFont(new Font("Arial", 8));
+            gc.fillText(String.valueOf(strongest.power), 69, 13);
+        }
+
+        // Текст з іменем
+        gc.setFill(Color.BLACK);
+        gc.setFont(new Font("Arial", 10));
+        String displayName = name.length() > 10 ? name.substring(0, 10) + "..." : name;
+        gc.fillText(displayName, 5, canvas.getHeight() - 5);
     }
 
-    public void redraw() {
-        drawOwl();
-        // Оновлюємо колір прямокутника синобі технік
-        if (hasShinobiTechniques) {
-            shinobiRect.setFill(Color.GOLD);
-            if (!Main.group.getChildren().contains(shinobiRect)) {
-                Main.group.getChildren().add(shinobiRect);
+    private Color getElementColor(String element) {
+        switch (element) {
+            case "Вогонь": return Color.RED;
+            case "Вода": return Color.BLUE;
+            case "Земля": return Color.SADDLEBROWN;
+            case "Повітря": return Color.LIGHTCYAN;
+            case "Тінь": return Color.DARKGRAY;
+            case "Світло": return Color.GOLD;
+            default: return Color.GRAY;
+        }
+    }
+
+    public Technique getStrongestTechnique() {
+        if (techniques.isEmpty()) return null;
+
+        Technique strongest = techniques.get(0);
+        for (Technique technique : techniques) {
+            if (technique.power > strongest.power) {
+                strongest = technique;
             }
-        } else {
-            shinobiRect.setFill(Color.GRAY);
+        }
+        return strongest;
+    }
+
+    public int getTotalPower() {
+        int total = 0;
+        for (Technique technique : techniques) {
+            total += technique.power;
+        }
+        return total;
+    }
+
+    public String getTechniquesInfo() {
+        if (techniques.isEmpty()) {
+            return "Немає технік";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Техніки сови ").append(name).append(":\n\n");
+
+        for (int i = 0; i < techniques.size(); i++) {
+            Technique technique = techniques.get(i);
+            sb.append((i + 1)).append(". ").append(technique.toString()).append("\n");
+        }
+
+        sb.append("\nЗагальна сила: ").append(getTotalPower());
+        return sb.toString();
+    }
+
+    public String getDetailedTechniquesInfo() {
+        if (techniques.isEmpty()) {
+            return "У цієї сови немає технік";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Детальна інформація про техніки сови ").append(name).append(":\n\n");
+
+        for (int i = 0; i < techniques.size(); i++) {
+            Technique technique = techniques.get(i);
+            sb.append("=== Техніка ").append(i + 1).append(" ===\n");
+            sb.append(technique.getDetailedInfo()).append("\n\n");
+        }
+
+        sb.append("Загальна сила всіх технік: ").append(getTotalPower());
+        return sb.toString();
+    }
+
+    // Методи для додавання/видалення технік
+    public void addTechnique(Technique technique) {
+        if (!techniques.contains(technique)) {
+            techniques.add(technique);
+            drawOwl(); // Перемалювати для оновлення індикаторів
         }
     }
 
-    public void removeFromScene() {
-        Main.group.getChildren().remove(canvas);
-        Main.group.getChildren().remove(rectActive);
-        if (Main.group.getChildren().contains(shinobiRect)) {
-            Main.group.getChildren().remove(shinobiRect);
+    public boolean removeTechnique(Technique technique) {
+        if (techniques.remove(technique)) {
+            drawOwl(); // Перемалювати для оновлення індикаторів
+            return true;
         }
+        return false;
     }
 
-    public boolean isActive() {
-        return active;
+    public boolean removeTechniqueByIndex(int index) {
+        if (index >= 0 && index < techniques.size()) {
+            techniques.remove(index);
+            drawOwl(); // Перемалювати для оновлення індикаторів
+            return true;
+        }
+        return false;
+    }
+
+    public ArrayList<Technique> getTechniques() {
+        return new ArrayList<>(techniques); // Повертаємо копію
     }
 
     public void setActive(boolean active) {
         this.active = active;
-        if (active) {
-            rectActive.setStroke(Color.YELLOW);
-            rectActive.setStrokeWidth(5);
-        } else {
-            rectActive.setStroke(Color.BLACK);
-            rectActive.setStrokeWidth(3);
-        }
+        rectActive.setVisible(active);
     }
 
-    public void move(double dx, double dy) {
-        canvas.setLayoutX(canvas.getLayoutX() + dx);
-        canvas.setLayoutY(canvas.getLayoutY() + dy);
-        rectActive.setX(rectActive.getX() + dx);
-        rectActive.setY(rectActive.getY() + dy);
-        shinobiRect.setX(shinobiRect.getX() + dx);
-        shinobiRect.setY(shinobiRect.getY() + dy);
-    }
-
-    public boolean contains(double x, double y) {
-        return canvas.getBoundsInParent().contains(x, y);
-    }
-
-    // Метод для оновлення позиції елементів (для клонованих об'єктів)
-    public void updatePosition() {
-        double x = canvas.getLayoutX();
-        double y = canvas.getLayoutY();
-
-        rectActive.setX(x - 2);
-        rectActive.setY(y - 2);
-        shinobiRect.setX(x + 170);
-        shinobiRect.setY(y + 10);
-    }
-
-    // Глибинне копіювання
-    @Override
-    public Owl clone() {
-        try {
-            Owl cloned = (Owl) super.clone();
-
-            // Глибинне копіювання посилальних типів
-            cloned.techniques = new ArrayList<>(this.techniques);
-            cloned.shinobiRect = new Rectangle(shinobiRect.getWidth(), shinobiRect.getHeight());
-            cloned.shinobiRect.setFill(shinobiRect.getFill());
-
-            // Створюємо новий канвас та прямокутники
-            cloned.canvas = new Canvas(200, 180);
-            cloned.rectActive = new Rectangle(204, 184);
-            cloned.rectActive.setFill(Color.TRANSPARENT);
-            cloned.rectActive.setStrokeWidth(3);
-            cloned.rectActive.setStroke(Color.BLACK);
-
-            cloned.active = false;
-            cloned.belongsToCastle = null; // Клонована сова не належить замку
-
-            return cloned;
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e);
-        }
+    public boolean isActive() {
+        return active;
     }
 
     public void setBelongsToCastle(Castle castle) {
@@ -227,9 +271,53 @@ public class Owl implements Cloneable {
         return belongsToCastle;
     }
 
-    public String getStatusInfo() {
-        String castleInfo = belongsToCastle != null ?
-                " (належить: " + belongsToCastle.name + ")" : " (вільна)";
-        return name + " (" + owlType + ")" + castleInfo;
+    public boolean contains(double x, double y) {
+        return canvas.getBoundsInParent().contains(x, y);
+    }
+
+    public void move(double dx, double dy) {
+        canvas.setLayoutX(canvas.getLayoutX() + dx);
+        canvas.setLayoutY(canvas.getLayoutY() + dy);
+        updatePosition();
+    }
+
+    public void updatePosition() {
+        rectActive.setLayoutX(canvas.getLayoutX());
+        rectActive.setLayoutY(canvas.getLayoutY());
+
+        if (hasShinobiTechniques && shinobiRect != null) {
+            shinobiRect.setLayoutX(canvas.getLayoutX() + 70);
+            shinobiRect.setLayoutY(canvas.getLayoutY());
+        }
+    }
+
+    public void removeFromScene() {
+        Main.group.getChildren().remove(canvas);
+        Main.group.getChildren().remove(rectActive);
+        if (hasShinobiTechniques && shinobiRect != null) {
+            Main.group.getChildren().remove(shinobiRect);
+        }
+    }
+
+    // Метод клонування з копіюванням технік
+    public Owl createCopy(String newName, double x, double y) {
+        Owl copy = new Owl(newName, this.type, this.hasShinobiTechniques, this.skillLevel, x, y);
+
+        // Копіюємо всі техніки
+        copy.techniques.clear();
+        for (Technique technique : this.techniques) {
+            copy.techniques.add(new Technique(technique));
+        }
+
+        // Перемалювати для оновлення індикаторів
+        copy.drawOwl();
+
+        return copy;
+    }
+
+    @Override
+    public String toString() {
+        return name + " [" + type + ", " + skillLevel + ", Технік: " + techniques.size() +
+                ", Сила: " + getTotalPower() + "]";
     }
 }
