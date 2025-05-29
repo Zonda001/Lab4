@@ -60,7 +60,7 @@ public class Owl implements Cloneable {
         updatePosition();
     }
 
-    private void drawOwl() {
+    public void drawOwl() {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 

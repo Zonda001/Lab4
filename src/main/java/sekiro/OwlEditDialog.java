@@ -31,7 +31,7 @@ public class OwlEditDialog {
         Label typeLabel = new Label("Тип сови:");
         ComboBox<String> typeCombo = new ComboBox<>();
         typeCombo.getItems().addAll("Сова", "Великий Сова", "Нащадок Сови");
-        typeCombo.setValue(owl.owlType);
+        typeCombo.setValue(owl.type); // ВИПРАВЛЕНО: було owl.owlType
 
         Label locationLabel = new Label("Позиція X:");
         TextField xField = new TextField(String.valueOf((int)owl.canvas.getLayoutX()));
@@ -95,19 +95,13 @@ public class OwlEditDialog {
             try {
                 String newName = nameField.getText().trim();
                 if (newName.isEmpty()) {
-                    Alert alert = new Alert(Alert.AlertType.WARNING);
-                    alert.setTitle("Помилка");
-                    alert.setHeaderText("Введіть ім'я сови!");
-                    alert.showAndWait();
+                    showAlert("Помилка", "Введіть ім'я сови!", Alert.AlertType.WARNING);
                     return;
                 }
 
                 String newType = typeCombo.getValue();
                 if (newType == null) {
-                    Alert alert = new Alert(Alert.AlertType.WARNING);
-                    alert.setTitle("Помилка");
-                    alert.setHeaderText("Оберіть тип сови!");
-                    alert.showAndWait();
+                    showAlert("Помилка", "Оберіть тип сови!", Alert.AlertType.WARNING);
                     return;
                 }
 
@@ -120,7 +114,7 @@ public class OwlEditDialog {
 
                 // Оновлюємо сову
                 owl.name = newName;
-                owl.owlType = newType;
+                owl.type = newType; // ВИПРАВЛЕНО: було owl.owlType
                 owl.hasShinobiTechniques = newShinoby;
                 owl.skillLevel = newSkillLevel;
 
@@ -128,14 +122,11 @@ public class OwlEditDialog {
                 owl.move(newX - owl.canvas.getLayoutX(), newY - owl.canvas.getLayoutY());
 
                 // Перемальовуємо сову з новими параметрами
-                owl.redraw();
+                owl.drawOwl(); // ВИПРАВЛЕНО: викликаємо існуючий метод drawOwl() замість redraw()
 
                 window.close();
             } catch (NumberFormatException ex) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Помилка");
-                alert.setHeaderText("Невірний формат координат!");
-                alert.showAndWait();
+                showAlert("Помилка", "Невірний формат координат!", Alert.AlertType.ERROR);
             }
         });
 
@@ -150,5 +141,14 @@ public class OwlEditDialog {
         Scene scene = new Scene(grid, 400, 350);
         window.setScene(scene);
         window.showAndWait();
+    }
+
+    // ДОДАНО: метод showAlert
+    private static void showAlert(String title, String message, Alert.AlertType type) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }
