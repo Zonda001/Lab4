@@ -41,7 +41,7 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         Main.primaryStage = primaryStage;
-        primaryStage.setTitle("Sekiro - Сови та Замки");
+        primaryStage.setTitle("Sekiro");
 
         // Встановлення мінімального розміру вікна
         primaryStage.setMinWidth(800);
@@ -57,9 +57,9 @@ public class Main extends Application {
         castles.add(new Castle("Баштовий Додзьо", "Верхній Баштовий Додзьо", 650, 100));
 
         // Створюємо початкових сов з адаптованими координатами
-        addNewOwl("Отець Сова", "Великий Сова", true, "Майстер", 250, 100);
-        addNewOwl("Молода Сова", "Нащадок Сови", false, "Новачок", 450, 180);
-        addNewOwl("Стража", "Сова", true, "Експерт", 600, 280);
+        addNewOwl("Великий Сова", "Великий Сова", true, "Майстер", 250, 100);
+        addNewOwl("Нащадок Сови", "Нащадок Сови", false, "Новачок", 450, 180);
+        addNewOwl("Сова", "Сова", true, "Експерт", 600, 280);
 
         // Додаємо деяких сов до замків
         castles.get(0).addOwl(owls.get(0));
@@ -156,6 +156,37 @@ public class Main extends Application {
                 removeOwlFromAllCastles();
                 updateStatus();
                 break;
+        }
+    }
+
+    private void showOwlContextMenu(Owl owl, double x, double y) {
+        try {
+            // Create a simple context menu using Alert dialog
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Меню сови");
+            alert.setHeaderText("Сова: " + owl.name);
+
+            StringBuilder content = new StringBuilder();
+            content.append("Тип: ").append(owl.type).append("\n");
+            content.append("Рівень: ").append(owl.skillLevel).append("\n");
+            content.append("Техніки Shinobi: ").append(owl.hasShinobiTechniques ? "Так" : "Ні").append("\n");
+            content.append("Кількість технік: ").append(owl.techniques.size()).append("\n");
+            content.append("Загальна сила: ").append(owl.getTotalPower()).append("\n\n");
+
+            if (owl.getBelongsToCastle() != null) {
+                content.append("Належить замку: ").append(owl.getBelongsToCastle().name).append("\n");
+            } else {
+                content.append("Не належить жодному замку\n");
+            }
+
+            content.append("\nТехніки:\n").append(owl.getTechniquesInfo());
+
+            alert.setContentText(content.toString());
+            alert.showAndWait();
+
+        } catch (Exception e) {
+            System.err.println("Помилка відображення контекстного меню: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

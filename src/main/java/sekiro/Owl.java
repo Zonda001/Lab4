@@ -5,8 +5,12 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
+import javafx.scene.image.Image;
 
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Owl implements Cloneable {
     String name;
@@ -18,7 +22,46 @@ public class Owl implements Cloneable {
     Rectangle shinobiRect;
     boolean active = false;
     Castle belongsToCastle;
-    ArrayList<Technique> techniques; // Список технік сови
+    ArrayList<Technique> techniques;
+
+    // Статичні поля для текстур
+    private static Map<String, Image> owlTextures = new HashMap<>();
+    private static boolean texturesLoaded = false;
+
+    // Статичний блок для завантаження текстур
+    static {
+        loadTextures();
+    }
+
+    private static void loadTextures() {
+        try {
+            // Спробуємо завантажити текстури з ресурсів
+            String[] textureFiles = {
+                    "/textures/Idle.PNG"
+            };
+
+            for (String textureFile : textureFiles) {
+                try {
+                    InputStream stream = Owl.class.getResourceAsStream(textureFile);
+                    if (stream != null) {
+                        Image image = new Image(stream);
+                        String key = textureFile.substring(textureFile.lastIndexOf("/") + 1, textureFile.lastIndexOf("."));
+                        owlTextures.put(key, image);
+                        System.out.println("Завантажено текстуру: " + key);
+                    }
+                } catch (Exception e) {
+                    System.out.println("Не вдалося завантажити текстуру: " + textureFile);
+                }
+            }
+
+            texturesLoaded = true;
+            System.out.println("Завантажено текстур: " + owlTextures.size());
+
+        } catch (Exception e) {
+            System.out.println("Помилка завантаження текстур: " + e.getMessage());
+            texturesLoaded = true; // Встановлюємо true щоб не блокувати роботу
+        }
+    }
 
     public Owl(String name, String type, boolean hasShinobiTechniques, String skillLevel, double x, double y) {
         this.name = name;
@@ -64,6 +107,68 @@ public class Owl implements Cloneable {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 
+        // Спочатку намагаємося використати текстуру
+        if (texturesLoaded && tryDrawWithTexture(gc)) {
+            // Якщо текстура успішно намальована, додаємо тільки індикатори
+            drawIndicators(gc);
+            return;
+        }
+
+        // Якщо текстури немає або не завантажилася, малюємо вручну
+        drawOwlManually(gc);
+        drawIndicators(gc);
+    }
+
+    private boolean tryDrawWithTexture(GraphicsContext gc) {
+        try {
+            // Визначаємо ключ текстури на основі типу та рівня
+            String textureKey = getTextureKey();
+            Image texture = owlTextures.get(textureKey);
+
+            if (texture != null && !texture.isError()) {
+                // Малюємо текстуру, масштабуючи її під розмір canvas
+                gc.drawImage(texture, 0, 0, canvas.getWidth(), canvas.getHeight());
+                return true;
+            }
+
+            // Якщо основна текстура не знайдена, спробуємо загальну
+            texture = owlTextures.get("Idle");
+            if (texture != null && !texture.isError()) {
+                gc.drawImage(texture, 0, 0, canvas.getWidth(), canvas.getHeight());
+                return true;
+            }
+
+        } catch (Exception e) {
+            System.out.println("Помилка при малюванні текстури: " + e.getMessage());
+        }
+
+        return false;
+    }
+
+    private String getTextureKey() {
+        // Спочатку перевіряємо тип сови
+        switch (type) {
+            case "Великий Сова":
+                return "owl_great";
+            case "Нащадок Сови":
+                return "owl_descendant";
+            case "Сова":
+            default:
+                // Якщо тип стандартний, використовуємо рівень
+                switch (skillLevel) {
+                    case "Майстер":
+                        return "owl_master";
+                    case "Експерт":
+                        return "owl_expert";
+                    case "Новачок":
+                        return "owl_novice";
+                    default:
+                        return "owl_regular";
+                }
+        }
+    }
+
+    private void drawOwlManually(GraphicsContext gc) {
         // Визначаємо колір в залежності від типу та рівня
         Color bodyColor = Color.BROWN;
         Color eyeColor = Color.YELLOW;
@@ -135,20 +240,22 @@ public class Owl implements Cloneable {
         gc.strokeLine(46, 75, 44, 78);
         gc.strokeLine(50, 75, 48, 78);
         gc.strokeLine(52, 75, 54, 78);
+    }
 
+    private void drawIndicators(GraphicsContext gc) {
         // Індикатор кількості технік
         gc.setFill(Color.WHITE);
         gc.setFont(new Font("Arial", 10));
-        gc.fillText("T:" + techniques.size(), 5, 12);
+        gc.fillText("T:" + techniques.size(), 5, 25); // Було 12, тепер 25
 
         // Показуємо найпотужнішу техніку
         if (!techniques.isEmpty()) {
             Technique strongest = getStrongestTechnique();
             gc.setFill(getElementColor(strongest.element));
-            gc.fillOval(65, 5, 12, 12);
+            gc.fillOval(65, 15, 12, 12); // Було 5, тепер 15
             gc.setFill(Color.WHITE);
             gc.setFont(new Font("Arial", 8));
-            gc.fillText(String.valueOf(strongest.power), 69, 13);
+            gc.fillText(String.valueOf(strongest.power), 69, 23); // Було 13, тепер 23
         }
 
         // Текст з іменем
@@ -313,6 +420,21 @@ public class Owl implements Cloneable {
         copy.drawOwl();
 
         return copy;
+    }
+
+    // Статичний метод для перевірки чи завантажені текстури
+    public static boolean areTexturesLoaded() {
+        return texturesLoaded;
+    }
+
+    // Статичний метод для отримання інформації про завантажені текстури
+    public static String getTexturesInfo() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Завантажено текстур: ").append(owlTextures.size()).append("\n");
+        for (String key : owlTextures.keySet()) {
+            sb.append("- ").append(key).append("\n");
+        }
+        return sb.toString();
     }
 
     @Override

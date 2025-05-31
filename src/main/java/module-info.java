@@ -2,6 +2,7 @@ module Lab4 {
     requires javafx.controls;
     requires javafx.fxml;
 
+
     // Export your package to JavaFX
     exports sekiro to javafx.graphics, javafx.base;
 
