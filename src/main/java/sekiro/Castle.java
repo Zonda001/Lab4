@@ -75,8 +75,7 @@ public class Castle {
                 String[] castleTextures = {
                         "asina_castle.png",      // Повна текстура замку Асіна
                         "hirata_estate.png",     // Повна текстура Хіру-ден
-                        "senpou_temple.png",     // Повна текстура Верхнього Баштового Додзьо
-                        "default_castle.png"     // Резервна текстура
+                        "senpou_temple.png"     // Повна текстура Верхнього Баштового Додзьо
                 };
 
                 for (String textureName : castleTextures) {
@@ -123,35 +122,48 @@ public class Castle {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
 
+        // Спочатку малюємо інформаційні поля (фон)
+        drawCastleInfo(gc);
+
         // Визначаємо яку текстуру використовувати
         String textureFileName = getCastleTextureFileName();
         Image castleTexture = textures.get(textureFileName);
 
         if (castleTexture != null && !castleTexture.isError()) {
-            // Малюємо готову текстуру замку на весь canvas
-            gc.drawImage(castleTexture, 0, 30, 250, 140);
+            // Малюємо готову текстуру замку між інформаційними полями
+            // Залишаємо місце зверху (30px) та знизу (25px) для тексту
+            gc.drawImage(castleTexture, 5, 30, 240, 140);
         } else {
             // Якщо текстура не завантажилась, малюємо простий замок
             drawFallbackCastle(gc);
         }
 
-        // Додаємо текстову інформацію поверх текстури
-        drawCastleInfo(gc);
+        // Перемалювати текстову інформацію поверх всього
+        drawCastleInfoOverlay(gc);
     }
 
+    private void drawCastleInfo(GraphicsContext gc) {
+        // Напівпрозорий фон для тексту (тільки фон, без тексту)
+        gc.setFill(Color.color(0, 0, 0, 0.7));
+        gc.fillRect(5, 5, 240, 25);  // Верхнє поле
+        gc.fillRect(5, 170, 240, 25); // Нижнє поле
+    }
 
+    private void drawCastleInfoOverlay(GraphicsContext gc) {
+        // Назва замку
+        gc.setFill(Color.WHITE);
+        gc.setFont(new Font("Arial Bold", 16));
+        gc.fillText(name, 10, 22);
 
-    private String getCastleTextureFileName() {
-        switch (castleType) {
-            case "Замок Асіна":
-                return "asina_castle.png";
-            case "Хіру-ден":
-                return "hirata_estate.png";
-            case "Верхній Баштовий Додзьо":
-                return "senpou_temple.png";
-            default:
-                return "default_castle.png";
-        }
+        // Тип замку
+        gc.setFill(Color.LIGHTBLUE);
+        gc.setFont(new Font("Arial", 12));
+        gc.fillText(castleType, 10, 185);
+
+        // Кількість сов
+        gc.setFill(Color.GOLD);
+        gc.setFont(new Font("Arial Bold", 14));
+        gc.fillText("🦉 Сов: " + owls.size(), 150, 185);
     }
 
     private void drawFallbackCastle(GraphicsContext gc) {
@@ -174,61 +186,54 @@ public class Castle {
                 break;
         }
 
-        // Малюємо простий замок
+        // Малюємо простий замок в доступній області (між інформаційними полями)
+        // Основна будівля
         gc.setFill(castleColor);
-        gc.fillRect(50, 100, 150, 80);
+        gc.fillRect(60, 95, 130, 65);
         gc.setStroke(Color.BLACK);
         gc.setLineWidth(2);
-        gc.strokeRect(50, 100, 150, 80);
+        gc.strokeRect(60, 95, 130, 65);
 
-        // Башти
-        gc.fillRect(30, 80, 40, 100);
-        gc.fillRect(180, 80, 40, 100);
-        gc.strokeRect(30, 80, 40, 100);
-        gc.strokeRect(180, 80, 40, 100);
+        // Башти (менші розміри)
+        gc.fillRect(45, 80, 30, 80);
+        gc.fillRect(175, 80, 30, 80);
+        gc.strokeRect(45, 80, 30, 80);
+        gc.strokeRect(175, 80, 30, 80);
 
-        // Дахи
+        // Дахи (адаптовані під новий розмір)
         gc.setFill(roofColor);
-        double[] xTower1 = {25, 50, 75};
-        double[] yTower1 = {80, 50, 80};
+        double[] xTower1 = {42, 60, 78};
+        double[] yTower1 = {80, 55, 80};
         gc.fillPolygon(xTower1, yTower1, 3);
 
-        double[] xTower2 = {175, 200, 225};
-        double[] yTower2 = {80, 50, 80};
+        double[] xTower2 = {172, 190, 208};
+        double[] yTower2 = {80, 55, 80};
         gc.fillPolygon(xTower2, yTower2, 3);
 
-        double[] xRoof = {40, 125, 210};
-        double[] yRoof = {100, 70, 100};
+        double[] xRoof = {50, 125, 200};
+        double[] yRoof = {95, 70, 95};
         gc.fillPolygon(xRoof, yRoof, 3);
 
-        // Ворота та вікна
+        // Ворота та вікна (менші та в центрі)
         gc.setFill(Color.SADDLEBROWN);
-        gc.fillRect(110, 140, 30, 40);
+        gc.fillRect(115, 130, 20, 30);
         gc.setFill(Color.YELLOW);
-        gc.fillRect(70, 120, 15, 15);
-        gc.fillRect(165, 120, 15, 15);
+        gc.fillRect(80, 110, 12, 12);
+        gc.fillRect(158, 110, 12, 12);
     }
 
-    private void drawCastleInfo(GraphicsContext gc) {
-        // Напівпрозорий фон для тексту
-        gc.setFill(Color.color(0, 0, 0, 0.7));
-        gc.fillRect(5, 5, 240, 25);
-        gc.fillRect(5, 170, 240, 25);
 
-        // Назва замку
-        gc.setFill(Color.WHITE);
-        gc.setFont(new Font("Arial Bold", 16));
-        gc.fillText(name, 10, 22);
-
-        // Тип замку
-        gc.setFill(Color.LIGHTBLUE);
-        gc.setFont(new Font("Arial", 12));
-        gc.fillText(castleType, 10, 185);
-
-        // Кількість сов
-        gc.setFill(Color.GOLD);
-        gc.setFont(new Font("Arial Bold", 14));
-        gc.fillText("🦉 Сов: " + owls.size(), 150, 185);
+    private String getCastleTextureFileName() {
+        switch (castleType) {
+            case "Замок Асіна":
+                return "asina_castle.png";
+            case "Хіру-ден":
+                return "hirata_estate.png";
+            case "Верхній Баштовий Додзьо":
+                return "senpou_temple.png";
+            default:
+                return "default_castle.png";
+        }
     }
 
     public void addOwl(Owl owl) {

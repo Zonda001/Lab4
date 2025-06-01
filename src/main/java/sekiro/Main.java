@@ -13,16 +13,19 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Random;
 
 public class Main extends Application {
     // Адаптивні розміри для ноутбуків
-    public static final int WINDOW_WIDTH = 1024;  // Зменшено з 1200
-    public static final int WINDOW_HEIGHT = 768;  // Зменшено з 800
+    public static final int WINDOW_WIDTH = 1200;  // Зменшено з 1200
+    public static final int WINDOW_HEIGHT = 650;  // Зменшено з 800
 
     public static Stage primaryStage;
     public static Scene scene;
@@ -31,6 +34,10 @@ public class Main extends Application {
     public static ArrayList<Owl> owls = new ArrayList<>();
     public static ArrayList<Castle> castles = new ArrayList<>();
     public static Label statusLabel;
+
+    // Фонова текстура
+    private static ImageView backgroundImageView;
+    private static Rectangle backgroundRectangle;
 
     public static void addNewOwl(String name, String type, boolean hasShinobiTechniques,
                                  String skillLevel, double x, double y) {
@@ -48,8 +55,9 @@ public class Main extends Application {
         primaryStage.setMinHeight(600);
 
         group = new Group();
-        Rectangle background = new Rectangle(WINDOW_WIDTH, WINDOW_HEIGHT, Color.DARKGREEN.darker());
-        group.getChildren().add(background);
+
+        // Завантажуємо фонову текстуру
+        loadBackgroundTexture();
 
         // Створюємо макрооб'єкти (замки) з адаптованими координатами
         castles.add(new Castle("Замок Асіна", "Замок Асіна", 50, 50));
@@ -73,6 +81,10 @@ public class Main extends Application {
         statusLabel.setLayoutY(WINDOW_HEIGHT - 40);  // Адаптивна позиція
         statusLabel.setMaxWidth(WINDOW_WIDTH - 20);
         statusLabel.setWrapText(true);  // Дозволяємо перенос тексту
+
+        // Додаємо тінь для кращої читабельності тексту на фоні
+        statusLabel.setStyle("-fx-effect: dropshadow(gaussian, black, 2, 0.5, 1, 1);");
+
         group.getChildren().add(statusLabel);
 
         scene = new Scene(group, WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -96,6 +108,95 @@ public class Main extends Application {
 
         primaryStage.show();
         updateStatus();
+    }
+
+    private void loadBackgroundTexture() {
+        try {
+            // Спробуємо завантажити фонову текстуру
+            InputStream stream = getClass().getResourceAsStream("/textures/background.png");
+
+            if (stream != null) {
+                Image backgroundImage = new Image(stream);
+
+                if (!backgroundImage.isError()) {
+                    // Якщо текстура завантажилась успішно
+                    backgroundImageView = new ImageView(backgroundImage);
+                    backgroundImageView.setFitWidth(WINDOW_WIDTH);
+                    backgroundImageView.setFitHeight(WINDOW_HEIGHT);
+                    backgroundImageView.setPreserveRatio(false); // Розтягуємо на весь екран
+                    group.getChildren().add(backgroundImageView);
+
+                    System.out.println("Фонова текстура завантажена успішно");
+                    stream.close();
+                    return;
+                } else {
+                    System.err.println("Помилка при завантаженні фонової текстури");
+                    stream.close();
+                }
+            } else {
+                System.out.println("Файл фонової текстури не знайдено: /textures/backgrounds/main_background.png");
+            }
+        } catch (Exception e) {
+            System.err.println("Помилка завантаження фонової текстури: " + e.getMessage());
+        }
+
+        // Якщо текстура не завантажилась, використовуємо однотонний фон
+        createFallbackBackground();
+    }
+
+    private void createFallbackBackground() {
+        // Створюємо градієнтний фон як альтернативу
+        backgroundRectangle = new Rectangle(WINDOW_WIDTH, WINDOW_HEIGHT);
+
+        // Встановлюємо градієнт або однотонний колір
+        backgroundRectangle.setFill(Color.DARKGREEN.darker());
+
+        // Додаємо фоновий прямокутник
+        group.getChildren().add(backgroundRectangle);
+
+        System.out.println("Використовується резервний фон");
+    }
+
+    // Метод для зміни фону (можна викликати з меню або кнопок)
+    public static void changeBackgroundTexture(String texturePath) {
+        try {
+            InputStream stream = Main.class.getResourceAsStream(texturePath);
+
+            if (stream != null) {
+                Image newBackgroundImage = new Image(stream);
+
+                if (!newBackgroundImage.isError()) {
+                    if (backgroundImageView != null) {
+                        backgroundImageView.setImage(newBackgroundImage);
+                    } else {
+                        // Створюємо новий ImageView
+                        backgroundImageView = new ImageView(newBackgroundImage);
+                        backgroundImageView.setFitWidth(WINDOW_WIDTH);
+                        backgroundImageView.setFitHeight(WINDOW_HEIGHT);
+                        backgroundImageView.setPreserveRatio(false);
+
+                        // Видаляємо старий фон
+                        if (backgroundRectangle != null) {
+                            group.getChildren().remove(backgroundRectangle);
+                            backgroundRectangle = null;
+                        }
+
+                        // Додаємо новий фон на перше місце
+                        group.getChildren().add(0, backgroundImageView);
+                    }
+
+                    System.out.println("Фон змінено на: " + texturePath);
+                    stream.close();
+                } else {
+                    System.err.println("Помилка при завантаженні нової фонової текстури");
+                    stream.close();
+                }
+            } else {
+                System.out.println("Файл фонової текстури не знайдено: " + texturePath);
+            }
+        } catch (Exception e) {
+            System.err.println("Помилка зміни фонової текстури: " + e.getMessage());
+        }
     }
 
     private void handleKeyPress(KeyEvent event) {
@@ -155,6 +256,14 @@ public class Main extends Application {
             case R:
                 removeOwlFromAllCastles();
                 updateStatus();
+                break;
+
+            // Додаємо команди для зміни фону (опціонально)
+            case B:
+                if (event.isControlDown()) {
+                    // Ctrl+B - змінити фон на альтернативний
+                    changeBackgroundTexture("/textures/backgrounds/alternative_background.png");
+                }
                 break;
         }
     }
@@ -367,7 +476,7 @@ public class Main extends Application {
 
         String statusText;
         if (activeCount == 0) {
-            statusText = "Немає активних сов. Tab - створити, клік - активувати";
+            statusText = "Немає активних сов. Tab - створити, клік - активувати, Ctrl+B - змінити фон";
         } else if (activeCount == 1) {
             statusText = "Активна сова: " + activeOwls.toString() +
                     " | Стрілки - рух, Del/Backspace - видалити, Ctrl+C - копіювати, 1/2/3 - до замку, R - з замку";
