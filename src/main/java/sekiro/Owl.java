@@ -408,12 +408,13 @@ public class Owl implements Cloneable {
 
     // Метод клонування з копіюванням технік
     public Owl createCopy(String newName, double x, double y) {
+        // Створюємо нову сову з тими ж базовими параметрами
         Owl copy = new Owl(newName, this.type, this.hasShinobiTechniques, this.skillLevel, x, y);
 
-        // Копіюємо всі техніки
+        // Очищаємо згенеровані техніки і копіюємо оригінальні
         copy.techniques.clear();
         for (Technique technique : this.techniques) {
-            copy.techniques.add(new Technique(technique));
+            copy.techniques.add(new Technique(technique)); // Глибинне копіювання кожної техніки
         }
 
         // Перемалювати для оновлення індикаторів

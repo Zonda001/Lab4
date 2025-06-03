@@ -568,37 +568,18 @@ public class Main extends Application {
         for (Owl owl : owls) {
             if (owl.isActive()) {
                 try {
-                    // Створюємо копію сови
-                    Owl clonedOwl = new Owl(
-                            owl.name + " (копія)",
-                            owl.type,
-                            owl.hasShinobiTechniques,
-                            owl.skillLevel,
-                            owl.canvas.getLayoutX() + 50,
-                            owl.canvas.getLayoutY() + 50
-                    );
+                    // Використовуємо існуючий метод createCopy()
+                    double newX = owl.canvas.getLayoutX() + 50;
+                    double newY = owl.canvas.getLayoutY() + 50;
 
-                    // Перевіряємо межі екрану і коригуємо позицію якщо потрібно
-                    double newX = clonedOwl.canvas.getLayoutX();
-                    double newY = clonedOwl.canvas.getLayoutY();
+                    // Перевіряємо межі екрану
+                    if (newX + 80 > WINDOW_WIDTH) newX = owl.canvas.getLayoutX() - 50;
+                    if (newY + 80 > WINDOW_HEIGHT - 50) newY = owl.canvas.getLayoutY() - 50;
 
-                    if (newX + clonedOwl.canvas.getWidth() > WINDOW_WIDTH) {
-                        newX = owl.canvas.getLayoutX() - 50;
-                    }
-                    if (newY + clonedOwl.canvas.getHeight() > WINDOW_HEIGHT - 50) {
-                        newY = owl.canvas.getLayoutY() - 50;
-                    }
-
-                    // Встановлюємо скориговану позицію
-                    clonedOwl.canvas.setLayoutX(newX);
-                    clonedOwl.canvas.setLayoutY(newY);
-                    clonedOwl.updatePosition();
-
-                    // Додаємо до списку сов
+                    Owl clonedOwl = owl.createCopy(owl.name + " (копія)", newX, newY);
                     owls.add(clonedOwl);
 
-                    System.out.println("Створено копію сови: " + clonedOwl.name +
-                            " на позиції (" + newX + ", " + newY + ")");
+                    System.out.println("Створено копію сови з тими ж техніками: " + clonedOwl.name);
                     break;
 
                 } catch (Exception e) {
