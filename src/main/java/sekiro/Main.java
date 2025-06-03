@@ -4,8 +4,7 @@ import javafx.application.Application;
 import javafx.event.EventHandler;
 import javafx.scene.Group;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Label;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
@@ -16,6 +15,12 @@ import javafx.scene.text.Font;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -270,11 +275,75 @@ public class Main extends Application {
 
     private void showOwlContextMenu(Owl owl, double x, double y) {
         try {
-            // Create a simple context menu using Alert dialog
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Меню сови");
-            alert.setHeaderText("Сова: " + owl.name);
+            // Створюємо кастомне діалогове вікно
+            Stage window = new Stage();
+            window.initModality(Modality.APPLICATION_MODAL);
+            window.setTitle("Меню сови");
+            window.setMinWidth(400);
+            window.setMinHeight(500);
+            window.setResizable(true);
 
+            // Основний контейнер
+            VBox mainLayout = new VBox(10);
+            mainLayout.setPadding(new Insets(15));
+
+            // Заголовок з назвою сови
+            Label titleLabel = new Label("Сова: " + owl.name);
+            titleLabel.setFont(new Font("Arial", 16));
+            titleLabel.setStyle("-fx-font-weight: bold;");
+
+            // Панель з кнопками дій
+            HBox buttonPanel = new HBox(10);
+            buttonPanel.setAlignment(Pos.CENTER);
+
+            Button editButton = new Button("Редагувати");
+            editButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-padding: 8 16;");
+            editButton.setOnAction(e -> {
+                window.close();
+                try {
+                    OwlEditDialog.display(owl);
+                } catch (IOException ex) {
+                    showAlert("Помилка", "Не вдалося відкрити діалог редагування", Alert.AlertType.ERROR);
+                }
+            });
+
+            Button copyButton = new Button("Копіювати");
+            copyButton.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white; -fx-padding: 8 16;");
+            copyButton.setOnAction(e -> {
+                window.close();
+                copyOwlWithDialog(owl);
+            });
+
+            Button deleteButton = new Button("Видалити");
+            deleteButton.setStyle("-fx-background-color: #f44336; -fx-text-fill: white; -fx-padding: 8 16;");
+            deleteButton.setOnAction(e -> {
+                window.close();
+                deleteOwlWithConfirmation(owl);
+            });
+
+            Button techniquesButton = new Button("Техніки");
+            techniquesButton.setStyle("-fx-background-color: #FF9800; -fx-text-fill: white; -fx-padding: 8 16;");
+            techniquesButton.setOnAction(e -> {
+                window.close();
+                showTechniquesWindow(owl);
+            });
+
+            buttonPanel.getChildren().addAll(editButton, copyButton, deleteButton, techniquesButton);
+
+            // Розділювач
+            Separator separator = new Separator();
+
+            // Інформаційна панель (ScrollPane для довгого тексту)
+            ScrollPane scrollPane = new ScrollPane();
+            scrollPane.setFitToWidth(true);
+            scrollPane.setPrefHeight(300);
+
+            TextArea infoArea = new TextArea();
+            infoArea.setEditable(false);
+            infoArea.setWrapText(true);
+            infoArea.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace; -fx-font-size: 12px;");
+
+            // Формуємо текст з інформацією про сову
             StringBuilder content = new StringBuilder();
             content.append("Тип: ").append(owl.type).append("\n");
             content.append("Рівень: ").append(owl.skillLevel).append("\n");
@@ -288,15 +357,159 @@ public class Main extends Application {
                 content.append("Не належить жодному замку\n");
             }
 
-            content.append("\nТехніки:\n").append(owl.getTechniquesInfo());
+            content.append("\nТехніки:\n");
+            content.append(owl.getTechniquesInfo());
+            content.append("\n\nЗагальна сила: ").append(owl.getTotalPower());
 
-            alert.setContentText(content.toString());
-            alert.showAndWait();
+            infoArea.setText(content.toString());
+            scrollPane.setContent(infoArea);
+
+            // Кнопка закриття
+            Button closeButton = new Button("Закрити");
+            closeButton.setStyle("-fx-background-color: #9E9E9E; -fx-text-fill: white; -fx-padding: 8 20;");
+            closeButton.setOnAction(e -> window.close());
+
+            HBox closePanel = new HBox();
+            closePanel.setAlignment(Pos.CENTER);
+            closePanel.getChildren().add(closeButton);
+
+            // Додаємо всі елементи до основного контейнера
+            mainLayout.getChildren().addAll(
+                    titleLabel,
+                    buttonPanel,
+                    separator,
+                    scrollPane,
+                    closePanel
+            );
+
+            // Налаштування сцени та показ вікна
+            Scene scene = new Scene(mainLayout);
+            window.setScene(scene);
+
+            // Позиціонуємо вікно
+            window.setX(Math.max(0, x));
+            window.setY(Math.max(0, y));
+
+            window.show();
 
         } catch (Exception e) {
             System.err.println("Помилка відображення контекстного меню: " + e.getMessage());
             e.printStackTrace();
+
+            // Показуємо простий Alert якщо щось пішло не так
+            showSimpleOwlInfo(owl);
         }
+    }
+
+    private void copyOwlWithDialog(Owl owl) {
+        TextInputDialog dialog = new TextInputDialog(owl.name + "_копія");
+        dialog.setTitle("Копіювання сови");
+        dialog.setHeaderText("Створення копії сови");
+        dialog.setContentText("Введіть ім'я для копії:");
+
+        dialog.showAndWait().ifPresent(newName -> {
+            if (!newName.trim().isEmpty()) {
+                // Знаходимо вільне місце для копії
+                double newX = owl.canvas.getLayoutX() + 100;
+                double newY = owl.canvas.getLayoutY() + 50;
+
+                // Перевіряємо межі екрану
+                if (newX + 80 > WINDOW_WIDTH) newX = owl.canvas.getLayoutX() - 100;
+                if (newY + 80 > WINDOW_HEIGHT) newY = owl.canvas.getLayoutY() - 50;
+
+                addNewOwl(newName.trim(), owl.type, owl.hasShinobiTechniques, owl.skillLevel, newX, newY);
+                updateStatus();
+                showAlert("Успіх", "Сову успішно скопійовано!", Alert.AlertType.INFORMATION);
+            }
+        });
+    }
+
+    private void deleteOwlWithConfirmation(Owl owl) {
+        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmAlert.setTitle("Підтвердження видалення");
+        confirmAlert.setHeaderText("Видалення сови");
+        confirmAlert.setContentText("Ви впевнені, що хочете видалити сову \"" + owl.name + "\"?");
+
+        confirmAlert.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                // Видаляємо з усіх замків
+                for (Castle castle : castles) {
+                    castle.removeOwl(owl);
+                }
+                owl.removeFromScene();
+                owls.remove(owl);
+                updateStatus();
+                showAlert("Успіх", "Сову успішно видалено!", Alert.AlertType.INFORMATION);
+            }
+        });
+    }
+
+    private void showTechniquesWindow(Owl owl) {
+        Stage window = new Stage();
+        window.initModality(Modality.APPLICATION_MODAL);
+        window.setTitle("Техніки сови: " + owl.name);
+        window.setWidth(600);
+        window.setHeight(500);
+
+        VBox layout = new VBox(10);
+        layout.setPadding(new Insets(15));
+
+        Label titleLabel = new Label("Детальна інформація про техніки");
+        titleLabel.setFont(new Font("Arial", 16));
+        titleLabel.setStyle("-fx-font-weight: bold;");
+
+        TextArea techniquesArea = new TextArea();
+        techniquesArea.setText(getDetailedTechniquesInfo(owl));
+        techniquesArea.setEditable(false);
+        techniquesArea.setWrapText(true);
+        techniquesArea.setStyle("-fx-font-family: 'Consolas', 'Monaco', monospace;");
+
+        Button closeButton = new Button("Закрити");
+        closeButton.setOnAction(e -> window.close());
+
+        HBox buttonBox = new HBox();
+        buttonBox.setAlignment(Pos.CENTER);
+        buttonBox.getChildren().add(closeButton);
+
+        layout.getChildren().addAll(titleLabel, techniquesArea, buttonBox);
+        VBox.setVgrow(techniquesArea, Priority.ALWAYS);
+
+        Scene scene = new Scene(layout);
+        window.setScene(scene);
+        window.show();
+    }
+
+    private String getDetailedTechniquesInfo(Owl owl) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Техніки сови ").append(owl.name).append(":\n\n");
+
+        for (int i = 0; i < owl.techniques.size(); i++) {
+            Technique tech = owl.techniques.get(i);
+            sb.append(String.format("%d. %s [%s, %s, Сила: %d]\n",
+                    i + 1, tech.name, tech.type, tech.element, tech.power));
+            sb.append("   Опис: ").append(tech.description).append("\n\n");
+        }
+
+        sb.append("Загальна сила всіх технік: ").append(owl.getTotalPower());
+        return sb.toString();
+    }
+
+    private void showSimpleOwlInfo(Owl owl) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Інформація про сову");
+        alert.setHeaderText("Сова: " + owl.name);
+        alert.setContentText("Тип: " + owl.type + "\nРівень: " + owl.skillLevel +
+                "\nТехніки: " + owl.techniques.size() +
+                "\nЗагальна сила: " + owl.getTotalPower());
+        alert.showAndWait();
+    }
+
+    private void showAlert(String title, String message, Alert.AlertType type) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     private void handleMouseClick(MouseEvent event) {
