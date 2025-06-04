@@ -19,8 +19,10 @@ public class Owl implements Cloneable {
     String skillLevel;
     Canvas canvas;
     Rectangle rectActive;
+    Rectangle generalRect;  // Нова рамка для генерала
     Rectangle shinobiRect;
     boolean active = false;
+    boolean isGeneral = false;  // Новий статус генерала
     Castle belongsToCastle;
     ArrayList<Technique> techniques;
 
@@ -82,6 +84,13 @@ public class Owl implements Cloneable {
         rectActive.setStrokeWidth(3);
         rectActive.setVisible(false);
 
+        // Створюємо прямокутник для генерала
+        generalRect = new Rectangle(80, 80);
+        generalRect.setFill(Color.TRANSPARENT);
+        generalRect.setStroke(Color.GOLD);
+        generalRect.setStrokeWidth(5);
+        generalRect.setVisible(false);
+
         // Створюємо індикатор shinobi технік
         if (hasShinobiTechniques) {
             shinobiRect = new Rectangle(10, 10);
@@ -93,6 +102,7 @@ public class Owl implements Cloneable {
         // Додаємо до сцени
         Main.group.getChildren().add(canvas);
         Main.group.getChildren().add(rectActive);
+        Main.group.getChildren().add(generalRect);
         if (hasShinobiTechniques) {
             Main.group.getChildren().add(shinobiRect);
         }
@@ -173,29 +183,35 @@ public class Owl implements Cloneable {
         Color bodyColor = Color.BROWN;
         Color eyeColor = Color.YELLOW;
 
-        switch (type) {
-            case "Великий Сова":
-                bodyColor = Color.DARKBLUE;
-                eyeColor = Color.ORANGE;
-                break;
-            case "Нащадок Сови":
-                bodyColor = Color.LIGHTCYAN;
-                eyeColor = Color.LIGHTYELLOW;
-                break;
-            case "Сова":
-                bodyColor = Color.BROWN;
-                eyeColor = Color.YELLOW;
-                break;
-        }
+        // Якщо сова - генерал, робимо її золотою
+        if (isGeneral) {
+            bodyColor = Color.GOLD;
+            eyeColor = Color.ORANGE;
+        } else {
+            switch (type) {
+                case "Великий Сова":
+                    bodyColor = Color.DARKBLUE;
+                    eyeColor = Color.ORANGE;
+                    break;
+                case "Нащадок Сови":
+                    bodyColor = Color.LIGHTCYAN;
+                    eyeColor = Color.LIGHTYELLOW;
+                    break;
+                case "Сова":
+                    bodyColor = Color.BROWN;
+                    eyeColor = Color.YELLOW;
+                    break;
+            }
 
-        // Колір залежно від рівня майстерності
-        switch (skillLevel) {
-            case "Майстер":
-                bodyColor = bodyColor.deriveColor(0, 1.2, 0.8, 1.0); // Темніше
-                break;
-            case "Експерт":
-                bodyColor = bodyColor.deriveColor(0, 1.1, 0.9, 1.0);
-                break;
+            // Колір залежно від рівня майстерності
+            switch (skillLevel) {
+                case "Майстер":
+                    bodyColor = bodyColor.deriveColor(0, 1.2, 0.8, 1.0); // Темніше
+                    break;
+                case "Експерт":
+                    bodyColor = bodyColor.deriveColor(0, 1.1, 0.9, 1.0);
+                    break;
+            }
         }
 
         // Тіло сови
@@ -246,16 +262,23 @@ public class Owl implements Cloneable {
         // Індикатор кількості технік
         gc.setFill(Color.WHITE);
         gc.setFont(new Font("Arial", 10));
-        gc.fillText("T:" + techniques.size(), 5, 25); // Було 12, тепер 25
+        gc.fillText("T:" + techniques.size(), 5, 25);
 
         // Показуємо найпотужнішу техніку
         if (!techniques.isEmpty()) {
             Technique strongest = getStrongestTechnique();
             gc.setFill(getElementColor(strongest.element));
-            gc.fillOval(65, 15, 12, 12); // Було 5, тепер 15
+            gc.fillOval(65, 15, 12, 12);
             gc.setFill(Color.WHITE);
             gc.setFont(new Font("Arial", 8));
-            gc.fillText(String.valueOf(strongest.power), 69, 23); // Було 13, тепер 23
+            gc.fillText(String.valueOf(strongest.power), 69, 23);
+        }
+
+        // Індикатор генерала
+        if (isGeneral) {
+            gc.setFill(Color.GOLD);
+            gc.setFont(new Font("Arial", 12));
+            gc.fillText("★", 35, 12); // Зірка над головою
         }
 
         // Текст з іменем
@@ -275,6 +298,88 @@ public class Owl implements Cloneable {
             case "Світло": return Color.GOLD;
             default: return Color.GRAY;
         }
+    }
+
+    // Новий метод для встановлення статусу генерала
+    public void setGeneral(boolean isGeneral) {
+        this.isGeneral = isGeneral;
+        generalRect.setVisible(isGeneral);
+        drawOwl(); // Перемалювати для оновлення зовнішнього вигляду
+
+        // Якщо генерал деактивується, деактивуємо і звичайну активність
+        if (!isGeneral) {
+            setActive(false);
+        }
+
+        System.out.println(name + (isGeneral ? " став генералом!" : " більше не генерал"));
+    }
+
+    public boolean isGeneral() {
+        return isGeneral;
+    }
+
+    // Перевірка чи сова торкається іншої сови
+    public boolean isTouching(Owl other) {
+        if (other == this) return false;
+
+        double thisX = canvas.getLayoutX();
+        double thisY = canvas.getLayoutY();
+        double otherX = other.canvas.getLayoutX();
+        double otherY = other.canvas.getLayoutY();
+
+        // Зменшено дистанцію для більш точної перевірки
+        double distance = Math.sqrt(Math.pow(thisX - otherX, 2) + Math.pow(thisY - otherY, 2));
+        return distance < 60; // Зменшено з 90 до 60 для точнішого дотику
+    }
+
+    // Телепортація сови в край екрана для побудови шеренги
+    public void teleportToFormation(String formationType, int positionInLine) {
+        double targetX, targetY;
+
+        switch (formationType) {
+            case "left_top":
+                // Ліва верхня частина екрана
+                targetX = 10;
+                targetY = 50 + (positionInLine * 90);
+                break;
+            case "right_top":
+                // Права верхня частина екрана
+                targetX = Main.WINDOW_WIDTH - 90;
+                targetY = 50 + (positionInLine * 90);
+                break;
+            case "right_bottom":
+                // Права нижня частина екрана
+                targetX = Main.WINDOW_WIDTH - 90;
+                targetY = (Main.WINDOW_HEIGHT / 2) + 50 + (positionInLine * 90);
+                break;
+            case "left_bottom":
+                // Ліва нижня частина екрана
+                targetX = 10;
+                targetY = (Main.WINDOW_HEIGHT / 2) + 50 + (positionInLine * 90);
+                break;
+            default:
+                // За замовчуванням - ліва верхня
+                targetX = 10;
+                targetY = 50 + (positionInLine * 90);
+                break;
+        }
+
+        // Перевіряємо межі екрану
+        if (targetY + 80 > Main.WINDOW_HEIGHT - 50) {
+            targetY = Main.WINDOW_HEIGHT - 130;
+        }
+
+        canvas.setLayoutX(targetX);
+        canvas.setLayoutY(targetY);
+        updatePosition();
+
+        System.out.println(name + " телепортовано в " + formationType +
+                " шеренгу на позицію " + positionInLine);
+    }
+
+    @Deprecated
+    public void teleportToFormation(boolean leftSide, int positionInLine) {
+        teleportToFormation(leftSide ? "left_top" : "right_top", positionInLine);
     }
 
     public Technique getStrongestTechnique() {
@@ -363,7 +468,7 @@ public class Owl implements Cloneable {
 
     public void setActive(boolean active) {
         this.active = active;
-        rectActive.setVisible(active);
+        rectActive.setVisible(active && !isGeneral); // Не показуємо червону рамку для генерала
     }
 
     public boolean isActive() {
@@ -392,6 +497,9 @@ public class Owl implements Cloneable {
         rectActive.setLayoutX(canvas.getLayoutX());
         rectActive.setLayoutY(canvas.getLayoutY());
 
+        generalRect.setLayoutX(canvas.getLayoutX());
+        generalRect.setLayoutY(canvas.getLayoutY());
+
         if (hasShinobiTechniques && shinobiRect != null) {
             shinobiRect.setLayoutX(canvas.getLayoutX() + 70);
             shinobiRect.setLayoutY(canvas.getLayoutY());
@@ -401,6 +509,7 @@ public class Owl implements Cloneable {
     public void removeFromScene() {
         Main.group.getChildren().remove(canvas);
         Main.group.getChildren().remove(rectActive);
+        Main.group.getChildren().remove(generalRect);
         if (hasShinobiTechniques && shinobiRect != null) {
             Main.group.getChildren().remove(shinobiRect);
         }
@@ -440,7 +549,8 @@ public class Owl implements Cloneable {
 
     @Override
     public String toString() {
-        return name + " [" + type + ", " + skillLevel + ", Технік: " + techniques.size() +
+        String prefix = isGeneral ? "★ " : "";
+        return prefix + name + " [" + type + ", " + skillLevel + ", Технік: " + techniques.size() +
                 ", Сила: " + getTotalPower() + "]";
     }
 }

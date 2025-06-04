@@ -39,6 +39,12 @@ public class Main extends Application {
     public static ArrayList<Owl> owls = new ArrayList<>();
     public static ArrayList<Castle> castles = new ArrayList<>();
     public static Label statusLabel;
+    public static Owl currentGeneral = null; // Поточний генерал
+    private static int leftFormationPosition = 0;
+    private static int rightTopFormationPosition = 0;
+    private static int rightBottomFormationPosition = 0;
+    private static int leftBottomFormationPosition = 0;
+
 
     // Фонова текстура
     private static ImageView backgroundImageView;
@@ -238,16 +244,20 @@ public class Main extends Application {
                 break;
 
             case UP:
-                moveActiveOwls(0, -delta);
+                moveActiveOwlsOrGeneral(0, -delta);
                 break;
             case DOWN:
-                moveActiveOwls(0, delta);
+                moveActiveOwlsOrGeneral(0, delta);
                 break;
             case LEFT:
-                moveActiveOwls(-delta, 0);
+                moveActiveOwlsOrGeneral(-delta, 0);
                 break;
             case RIGHT:
-                moveActiveOwls(delta, 0);
+                moveActiveOwlsOrGeneral(delta, 0);
+                break;
+            case V:
+                handleGeneralAssignment();
+                updateStatus();
                 break;
 
             // Додаткові команди для роботи з замками
@@ -399,6 +409,167 @@ public class Main extends Application {
             // Показуємо простий Alert якщо щось пішло не так
             showSimpleOwlInfo(owl);
         }
+    }
+
+    private void handleGeneralAssignment(){
+        // Знаходимо активну сову
+        Owl activeOwl = null;
+        for (Owl owl : owls) {
+            if (owl.isActive()) {
+                activeOwl = owl;
+                break;
+            }
+        }
+
+        if (activeOwl != null) {
+            // Якщо вже є генерал, деактивуємо його
+            if (currentGeneral != null) {
+                currentGeneral.setGeneral(false);
+                currentGeneral.setActive(false);
+            }
+
+            // Призначаємо нового генерала
+            currentGeneral = activeOwl;
+            currentGeneral.setGeneral(true);
+            currentGeneral.setActive(true);
+
+            // Скидаємо позиції в шерензі
+            resetAllFormationPositions();
+
+            System.out.println(activeOwl.name + " призначено генералом!");
+        } else {
+            System.out.println("Немає активної сови для призначення генералом");
+        }
+    }
+
+    private void resetAllFormationPositions() {
+        leftFormationPosition = 0;
+        rightTopFormationPosition = 0;
+        rightBottomFormationPosition = 0;
+        leftBottomFormationPosition = 0;
+    }
+
+    private void deactivateGeneral(){
+        if (currentGeneral != null){
+            currentGeneral.setGeneral(false);
+            currentGeneral.setActive(false);
+            currentGeneral = null;
+            resetAllFormationPositions();
+            System.out.println("Генерал деактивований");
+        }
+    }
+
+    private void moveActiveOwlsOrGeneral(double dx, double dy) {
+        if (currentGeneral != null) {
+            // Рухаємо генерала
+            double newX = currentGeneral.canvas.getLayoutX() + dx;
+            double newY = currentGeneral.canvas.getLayoutY() + dy;
+
+            // Перевіряємо межі екрану
+            if (newX >= 0 && newX + currentGeneral.canvas.getWidth() <= WINDOW_WIDTH &&
+                    newY >= 0 && newY + currentGeneral.canvas.getHeight() <= WINDOW_HEIGHT - 50) {
+
+                currentGeneral.move(dx, dy);
+
+                // ВИПРАВЛЕНО: Перевіряємо дотик ПІСЛЯ руху
+                checkGeneralTouchingOwls();
+                updateStatus(); // Оновлюємо статус після руху
+            }
+        } else {
+            // Звичайний рух активних сов
+            moveActiveOwls(dx, dy);
+        }
+    }
+
+    private void checkGeneralTouchingOwls() {
+        if (currentGeneral == null) return;
+
+        for (Owl owl : owls) {
+            if (owl != currentGeneral && currentGeneral.isTouching(owl)) {
+                // Перевіряємо чи сова ще не в формації
+                if (!isOwlInFormation(owl)) {
+                    // Визначаємо до якого замку належить сова
+                    Castle owlCastle = owl.getBelongsToCastle();
+
+                    if (owlCastle != null) {
+                        // Сова належить замку - телепортуємо в залежності від замку
+                        String formationType = getFormationTypeForCastle(owlCastle);
+                        teleportOwlToSpecificFormation(owl, formationType);
+
+                        // Телепортуємо всіх інших сов з того ж замку
+                        teleportCastleOwlsToFormation(owlCastle, formationType);
+
+                        System.out.println("Генерал " + currentGeneral.name + " торкнувся " + owl.name +
+                                " з замку " + owlCastle.name + " - телепортація в " + formationType + "!");
+                    } else {
+                        // Сова не належить жодному замку - телепортуємо вліво зверху
+                        teleportOwlToSpecificFormation(owl, "left_top");
+                        System.out.println("Генерал " + currentGeneral.name + " торкнувся " + owl.name +
+                                " (вільна сова) - телепортація вліво зверху!");
+                    }
+                }
+            }
+        }
+    }
+    private void teleportOwlToSpecificFormation(Owl owl, String formationType) {
+        switch (formationType) {
+            case "right_top":
+                owl.teleportToFormation("right_top", rightTopFormationPosition);
+                rightTopFormationPosition++;
+                break;
+            case "right_bottom":
+                owl.teleportToFormation("right_bottom", rightBottomFormationPosition);
+                rightBottomFormationPosition++;
+                break;
+            case "left_bottom":
+                owl.teleportToFormation("left_bottom", leftBottomFormationPosition);
+                leftBottomFormationPosition++;
+                break;
+            case "left_top":
+            default:
+                owl.teleportToFormation("left_top", leftFormationPosition);
+                leftFormationPosition++;
+                break;
+        }
+    }
+
+    private String getFormationTypeForCastle(Castle castle) {
+        switch (castle.name) {
+            case "Замок Асіна":
+                return "right_top";      // Справа зверху
+            case "Хіру-ден":
+                return "right_bottom";   // Справа знизу
+            case "Баштовий Додзьо":
+                return "left_bottom";    // Зліва знизу
+            default:
+                return "left_top";       // За замовчуванням зліва зверху
+        }
+    }
+
+    private void teleportCastleOwlsToFormation(Castle castle, String formationType) {
+        if (castle == null) return;
+
+        ArrayList<Owl> castleOwls = castle.getOwls();
+
+        for (Owl owl : castleOwls) {
+            if (owl != currentGeneral && !isOwlInFormation(owl)) {
+                teleportOwlToSpecificFormation(owl, formationType);
+                System.out.println(owl.name + " (з замку " + castle.name + ") автоматично телепортовано в " + formationType + " шеренгу");
+            }
+        }
+    }
+
+    private boolean isOwlInFormation(Owl owl) {
+        double x = owl.canvas.getLayoutX();
+        double y = owl.canvas.getLayoutY();
+
+        // Перевіряємо чи сова знаходиться в будь-якій із шеренг
+        boolean inLeftTopFormation = (x <= 30 && y <= WINDOW_HEIGHT / 2); // Ліва верхня
+        boolean inRightTopFormation = (x >= WINDOW_WIDTH - 120 && y <= WINDOW_HEIGHT / 2); // Права верхня
+        boolean inRightBottomFormation = (x >= WINDOW_WIDTH - 120 && y > WINDOW_HEIGHT / 2); // Права нижня
+        boolean inLeftBottomFormation = (x <= 30 && y > WINDOW_HEIGHT / 2); // Ліва нижня
+
+        return inLeftTopFormation || inRightTopFormation || inRightBottomFormation || inLeftBottomFormation;
     }
 
     private void copyOwlWithDialog(Owl owl) {
@@ -658,8 +829,9 @@ public class Main extends Application {
         int activeCount = 0;
         StringBuilder activeOwls = new StringBuilder();
 
+
         for (Owl owl : owls) {
-            if (owl.isActive()) {
+            if (owl.isActive() && !owl.isGeneral()) { // Виключаємо генерала з підрахунку звичайних активних
                 activeCount++;
                 if (activeOwls.length() > 0) {
                     activeOwls.append(", ");
@@ -669,11 +841,20 @@ public class Main extends Application {
         }
 
         String statusText;
-        if (activeCount == 0) {
-            statusText = "Немає активних сов. Tab - створити, клік - активувати, Ctrl+B - змінити фон";
+
+        if (currentGeneral != null) {
+            // Якщо є генерал
+            statusText = "★ ГЕНЕРАЛ: " + currentGeneral.name +
+                    " | Стрілки - рух генерала для формування шеренг | V - змінити генерала | ESC - деактивувати";
+
+            if (activeCount > 0) {
+                statusText += " | Активних сов: " + activeCount + " (" + activeOwls.toString() + ")";
+            }
+        } else if (activeCount == 0) {
+            statusText = "Немає активних сов. Tab - створити, клік - активувати, V - призначити генерала, Ctrl+B - змінити фон";
         } else if (activeCount == 1) {
             statusText = "Активна сова: " + activeOwls.toString() +
-                    " | Стрілки - рух, Del/Backspace - видалити, Ctrl+C - копіювати, 1/2/3 - до замку, R - з замку";
+                    " | V - зробити генералом | Стрілки - рух, Del/Backspace - видалити, Ctrl+C - копіювати, 1/2/3 - до замку, R - з замку";
         } else {
             statusText = "Активних сов: " + activeCount + " (" + activeOwls.toString() +
                     ") | Стрілки - рух, Del/Backspace - видалити, ESC - деактивувати";
